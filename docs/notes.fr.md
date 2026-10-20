@@ -2,20 +2,20 @@
 
 ## Décisions
 
+- Les fenêtres sont repérées par leur CGWindowID, pas par leur élément AX : Zen (basé sur Firefox) est une fois revenu à la position de repli après un aller-retour ⌃⇧N, signe qu'une app peut fournir un nouvel élément pour la même fenêtre. Obtenir l'identifiant passe par `_AXUIElementGetWindow`, le seul appel privé de l'app (pas d'alternative publique ; AeroSpace, yabai et Rectangle s'en servent ; aucun changement de SIP).
 - Bureau vide : wrkspaces prend le focus lui-même (sans fenêtre, la frappe ne va nulle part). Le Finder a été écarté : ses fenêtres garées ailleurs déclencheraient le suivi à l'activation.
 - Ouverture à la connexion via `SMAppService.mainApp`, désactivée par défaut, proposée seulement en .app.
 - L'icône ouvre la grille plutôt qu'un menu : plus léger à lire. Quitter est au clic droit, l'endroit habituel des apps de barre de menus.
 - Tester les clics : l'icône bouge avec les menus de l'app au premier plan, lire sa position avant de cliquer (`position of menu bar item 1 of menu bar 1`).
 - Grille affichée 0,15 s après ⌃N si ⌃ est encore enfoncé, comme Cmd-Tab : `⌃` seul est trop courant (Ctrl-C, Ctrl-clic) pour déclencher quoi que ce soit.
 - Pour la tester avec System Events : `key code … using control down` relâche ⌃ à la fin ; utiliser `key down control` puis un `key code` seul.
-- Bureaux émulés à la AeroSpace (fenêtres garées hors écran) plutôt que de vrais Spaces : pas de SIP, pas d'API privée, instantané, survit aux mises à jour de macOS.
+- Bureaux émulés à la AeroSpace (fenêtres garées hors écran) plutôt que de vrais Spaces : pas de SIP, pas d'API privée des Spaces, instantané, survit aux mises à jour de macOS.
 - Raccourcis `⌃1…9` / `⌃⇧1…9` repris des Spaces natifs : rien à apprendre. Codes de touche physiques, donc identiques en AZERTY.
 - `RegisterEventHotKey` (Carbon) pour les raccourcis : aucune permission en plus, contrairement à un CGEvent tap.
 - Délai AX réduit à 0,25 s pour qu'une app bloquée ne fige pas un changement de bureau.
 
 ## Pas encore géré
 
-- Les fenêtres sont repérées par leur élément AX. Zen (basé sur Firefox) est une fois revenu à la position de repli après un aller-retour ⌃⇧N, signe que son élément a changé pendant qu'il était garé : un repérage par identifiant de fenêtre serait plus solide.
 - Plusieurs écrans (les fenêtres sont garées au-delà de tous les écrans, mais les bureaux sont globaux).
 - Changement de focus dans une même app (⌘`) vers une fenêtre garée : non suivi.
 - i18n du menu.
