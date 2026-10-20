@@ -9,7 +9,7 @@
 - **Raccourcis déjà connus** : les mêmes que les Spaces de macOS.
 - **Vous suit** : Cmd-Tab ou le Dock vers une fenêtre d'un autre bureau vous y emmène.
 - **Rien de perdu** : quitter, Ctrl-C ou un plantage remet chaque fenêtre à l'écran.
-- **Aucune config** : une icône dans la barre de menus, une petite fenêtre avec des yeux et le numéro du bureau courant.
+- **Aucune config** : une icône dans la barre de menus avec le numéro du bureau courant et un petit dessin : une fenêtre avec des yeux, un blob, une fleur dont la pétale en surbrillance est le bureau, ou un anneau. Il se choisit sous la grille que l'icône ouvre.
 - **Voir où est tout** : un clic sur l'icône ouvre une grille des neuf bureaux avec leurs apps, un clic sur un bureau vous y emmène. Gardez `⌃` enfoncé après `⌃N` et la même grille apparaît, comme Cmd-Tab. Clic droit sur l'icône pour quitter.
 
 ## Installation

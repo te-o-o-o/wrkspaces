@@ -9,7 +9,7 @@
 - **Shortcuts you already know**: the same ones as macOS's own Spaces.
 - **Follows you**: Cmd-Tab or the Dock onto a window on another workspace takes you there.
 - **Nothing lost**: quitting, Ctrl-C or a crash puts every window back on screen.
-- **No config**: one menu bar item, a little window with eyes and the current workspace number.
+- **No config**: one menu bar item with the current workspace number and a little icon: a window with eyes, a blob, a flower whose highlighted petal is the workspace, or a ring. Pick it under the grid the icon opens.
 - **See where everything is**: click the icon for a grid of the nine workspaces with their apps, click one to go there. Keep `⌃` held after `⌃N` and the same grid shows up, like Cmd-Tab. Right-click the icon to quit.
 
 ## Install
