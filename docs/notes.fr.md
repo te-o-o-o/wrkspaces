@@ -2,6 +2,8 @@
 
 ## Décisions
 
+- Grille affichée 0,15 s après ⌃N si ⌃ est encore enfoncé, comme Cmd-Tab : `⌃` seul est trop courant (Ctrl-C, Ctrl-clic) pour déclencher quoi que ce soit.
+- Pour la tester avec System Events : `key code … using control down` relâche ⌃ à la fin ; utiliser `key down control` puis un `key code` seul.
 - Bureaux émulés à la AeroSpace (fenêtres garées hors écran) plutôt que de vrais Spaces : pas de SIP, pas d'API privée, instantané, survit aux mises à jour de macOS.
 - Raccourcis `⌃1…9` / `⌃⇧1…9` repris des Spaces natifs : rien à apprendre. Codes de touche physiques, donc identiques en AZERTY.
 - `RegisterEventHotKey` (Carbon) pour les raccourcis : aucune permission en plus, contrairement à un CGEvent tap.
@@ -17,7 +19,7 @@
 
 | OS | État |
 |---|---|
-| macOS 27.0.1 (arm64) | changement ⌃1↔⌃2 et restauration sur SIGTERM vérifiés, 1 écran, 7 apps ; ⌃⇧N et suivi Cmd-Tab pas encore |
+| macOS 27.0.1 (arm64) | changement, ⌃⇧N, restauration sur SIGTERM, menu des bureaux, grille (⌃ maintenu l'affiche, un appui bref non) vérifiés, 1 écran, 7 apps ; suivi Cmd-Tab et clic sur une fenêtre du menu pas encore |
 
 ## Pièges
 
