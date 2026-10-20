@@ -3,6 +3,13 @@
 <p align="center"><sub>v0.1.0 · Swift · macOS · MIT</sub></p>
 <p align="center"><a href="#fonctionnalités">Fonctionnalités</a> · <a href="#installation">Installation</a> · <a href="#utilisation">Utilisation</a> · <a href="#développement">Développement</a> · <a href="README.md">English</a></p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/grid-dark.png">
+    <img src="docs/grid-light.png" width="440" alt="La grille de wrkspaces : neuf bureaux avec les icônes de leurs apps, le choix de l'icône de la barre de menus et la liste des raccourcis">
+  </picture>
+</p>
+
 ## Fonctionnalités
 
 - **Changement instantané** : neuf bureaux, aucune animation, pas de SIP à désactiver.

@@ -3,6 +3,13 @@
 <p align="center"><sub>v0.1.0 · Swift · macOS · MIT</sub></p>
 <p align="center"><a href="#features">Features</a> · <a href="#install">Install</a> · <a href="#usage">Usage</a> · <a href="#development">Development</a> · <a href="README.fr.md">Français</a></p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/grid-dark.png">
+    <img src="docs/grid-light.png" width="440" alt="The wrkspaces grid: nine workspaces with the icons of their apps, the menu bar icon picker and the list of shortcuts">
+  </picture>
+</p>
+
 ## Features
 
 - **Instant switch**: nine workspaces, no sliding animation, no SIP to disable.

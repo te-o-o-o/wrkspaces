@@ -15,6 +15,7 @@
 
 ## Pas encore géré
 
+- Les fenêtres sont repérées par leur élément AX. Zen (basé sur Firefox) est une fois revenu à la position de repli après un aller-retour ⌃⇧N, signe que son élément a changé pendant qu'il était garé : un repérage par identifiant de fenêtre serait plus solide.
 - Plusieurs écrans (les fenêtres sont garées au-delà de tous les écrans, mais les bureaux sont globaux).
 - Changement de focus dans une même app (⌘`) vers une fenêtre garée : non suivi.
 - i18n du menu.
