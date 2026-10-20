@@ -2,7 +2,7 @@ import AppKit
 import Carbon.HIToolbox
 import WrkspacesCore
 
-final class App: NSObject, NSApplicationDelegate {
+final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var ws = Workspaces<AXUIElement>()
     var saved: [AXUIElement: CGPoint] = [:]  // real position of each hidden window
     var lastFocused: [Int: AXUIElement] = [:]
@@ -71,21 +71,45 @@ final class App: NSObject, NSApplicationDelegate {
 
     func buildMenu() {
         let menu = NSMenu()
-        for n in 1...workspaceCount {
-            let i = NSMenuItem(title: "\(n)", action: #selector(pick(_:)), keyEquivalent: "")
-            i.target = self
-            i.tag = n
-            menu.addItem(i)
-        }
-        menu.addItem(.separator())
-        let q = NSMenuItem(title: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q")
-        q.target = self
-        menu.addItem(q)
+        menu.delegate = self
         item.menu = menu
         updateMenu()
     }
 
+    /// Windows of each workspace, sorted by app then title.
+    func overview() -> [[WindowInfo]] {
+        refresh()
+        return (1...workspaceCount).map { ws.windows(in: $0).map(WindowInfo.init).sorted { $0.label < $1.label } }
+    }
+
+    /// Rebuilt on every open, so it shows where each window is right now.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        for (i, windows) in overview().enumerated() {
+            let n = i + 1
+            let row = menu.addItem(withTitle: windows.isEmpty ? "\(n)  —" : "\(n)", action: #selector(pick(_:)), keyEquivalent: "")
+            row.target = self
+            row.tag = n
+            row.state = n == ws.current ? .on : .off
+            for w in windows {
+                let wi = menu.addItem(withTitle: w.label, action: #selector(pickWindow(_:)), keyEquivalent: "")
+                wi.target = self
+                wi.indentationLevel = 1
+                wi.image = w.icon
+                wi.representedObject = w.window
+            }
+        }
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q").target = self
+    }
+
     @objc func pick(_ sender: NSMenuItem) { switchTo(sender.tag) }
+
+    @objc func pickWindow(_ sender: NSMenuItem) {
+        let w = sender.representedObject as! AXUIElement
+        if let n = ws.workspace(of: w) { switchTo(n) }
+        focus(w)
+    }
 
     func updateMenu() {
         item.button?.image = mascot(workspace: ws.current)
@@ -93,7 +117,6 @@ final class App: NSObject, NSApplicationDelegate {
         // Monospaced digits so the item does not change width from 1 to 9.
         item.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .medium)
         item.button?.title = "\(ws.current)"
-        item.menu?.items.forEach { $0.state = $0.tag == ws.current ? .on : .off }
     }
 }
 

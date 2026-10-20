@@ -60,3 +60,25 @@ var screens: [CGRect] { NSScreen.screens.map(\.frame) }
 func fallbackPosition() -> CGPoint {
     fallbackPosition(primary: NSScreen.screens[0].frame, visible: NSScreen.screens[0].visibleFrame)
 }
+
+/// What the menu and the switcher show about a window.
+struct WindowInfo {
+    let window: AXUIElement
+    let appName: String
+    let title: String
+    let icon: NSImage?
+
+    init(_ w: AXUIElement) {
+        let app = NSRunningApplication(processIdentifier: w.pid)
+        window = w
+        appName = app?.localizedName ?? "?"
+        title = w.get(kAXTitleAttribute) ?? ""
+        icon = app?.icon.map {
+            let i = $0.copy() as! NSImage
+            i.size = NSSize(width: 16, height: 16)
+            return i
+        }
+    }
+
+    var label: String { title.isEmpty || title == appName ? appName : "\(appName) — \(title.prefix(50))" }
+}
