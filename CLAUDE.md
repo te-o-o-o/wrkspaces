@@ -11,6 +11,7 @@ This project is outside the global stack table on purpose (macOS-only app, Swift
 ## Commands
 
 - `swift build`, `swift test`, `swift run wrkspaces`
+- `./bundle.sh`: release build packed as `.build/wrkspaces.app` (ad-hoc signed, `LSUIElement`); its version lives in the script
 - Only Command Line Tools here (no Xcode): tests use Swift Testing, not XCTest.
 
 ## Traps
@@ -21,6 +22,9 @@ This project is outside the global stack table on purpose (macOS-only app, Swift
 - `swift test` sometimes fails with "plugin for module 'TestingMacros' not found" (Command Line Tools bug, random, even with no change): just rerun.
 - `#expect(cgfloat == 1512 + 2560 - 1)` fails although both are 4071: write the literal.
 - From `swift run`, Accessibility permission belongs to the terminal app, not to the binary.
+- Each `./bundle.sh` changes the ad-hoc signature: the Accessibility grant no longer matches, reset it with `tccutil reset Accessibility io.github.te-o-o-o.wrkspaces`.
+- `NSWorkspace.frontmostApplication` is refreshed by our run loop, so it lags right after an app switch: ask AX (`kAXFocusedApplicationAttribute`) instead.
+- `NSApp.activate()` does work for this accessory app, but System Events' `frontmost` never reports it: check with `lsappinfo front`.
 
 ## Rules
 

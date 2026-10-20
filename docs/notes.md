@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- Empty workspace: wrkspaces takes the focus itself (it has no window, so keystrokes go nowhere). Finder was rejected: its windows parked elsewhere would trigger the follow-on-activation.
+- Open at Login through `SMAppService.mainApp`, off by default, only offered when running as a .app.
 - The icon opens the grid rather than a menu: lighter to read. Quit sits on right-click, the usual place for menu bar apps.
 - Testing clicks: the status item moves with the frontmost app's menus, so read its position before clicking (`position of menu bar item 1 of menu bar 1`).
 - Switcher shown 0.15 s after ⌃N if ⌃ is still held, like Cmd-Tab: `⌃` alone is too common (Ctrl-C, Ctrl-click) to trigger anything.
@@ -21,7 +23,7 @@
 
 | OS | Status |
 |---|---|
-| macOS 27.0.1 (arm64) | switch, ⌃⇧N, restore on SIGTERM, switcher grid (held ⌃ shows it, quick tap does not), grid from the icon (click a tile, click outside closes, right-click Quit) verified, 1 screen, 7 apps; Cmd-Tab follow seen working by side effect |
+| macOS 27.0.1 (arm64) | switch, ⌃⇧N, restore on SIGTERM, switcher grid (held ⌃ shows it, quick tap does not), grid from the icon (click a tile, click outside closes, right-click Quit) verified, 1 screen, 7 apps; Cmd-Tab follow seen working by side effect; empty workspace takes focus, quit restores after ⌃⇧N races (3 scripted runs); .app builds and signs, not launched yet |
 
 ## Pitfalls
 

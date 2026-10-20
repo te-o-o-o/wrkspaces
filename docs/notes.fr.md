@@ -2,6 +2,8 @@
 
 ## Décisions
 
+- Bureau vide : wrkspaces prend le focus lui-même (sans fenêtre, la frappe ne va nulle part). Le Finder a été écarté : ses fenêtres garées ailleurs déclencheraient le suivi à l'activation.
+- Ouverture à la connexion via `SMAppService.mainApp`, désactivée par défaut, proposée seulement en .app.
 - L'icône ouvre la grille plutôt qu'un menu : plus léger à lire. Quitter est au clic droit, l'endroit habituel des apps de barre de menus.
 - Tester les clics : l'icône bouge avec les menus de l'app au premier plan, lire sa position avant de cliquer (`position of menu bar item 1 of menu bar 1`).
 - Grille affichée 0,15 s après ⌃N si ⌃ est encore enfoncé, comme Cmd-Tab : `⌃` seul est trop courant (Ctrl-C, Ctrl-clic) pour déclencher quoi que ce soit.
@@ -21,7 +23,7 @@
 
 | OS | État |
 |---|---|
-| macOS 27.0.1 (arm64) | changement, ⌃⇧N, restauration sur SIGTERM, grille (⌃ maintenu l'affiche, un appui bref non), grille depuis l'icône (clic sur un bureau, clic ailleurs ferme, clic droit Quitter) vérifiés, 1 écran, 7 apps ; suivi Cmd-Tab vu marcher par effet de bord |
+| macOS 27.0.1 (arm64) | changement, ⌃⇧N, restauration sur SIGTERM, grille (⌃ maintenu l'affiche, un appui bref non), grille depuis l'icône (clic sur un bureau, clic ailleurs ferme, clic droit Quitter) vérifiés, 1 écran, 7 apps ; suivi Cmd-Tab vu marcher par effet de bord ; focus pris sur bureau vide, restauration à la fermeture après ⌃⇧N enchaînés (3 passes scriptées) ; le .app se construit et se signe, pas encore lancé |
 
 ## Pièges
 
