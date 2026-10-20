@@ -18,10 +18,14 @@ Pas encore de release. Depuis les sources (outils en ligne de commande Xcode req
 
 ```sh
 git clone https://github.com/te-o-o-o/wrkspaces && cd wrkspaces
-swift run -c release wrkspaces
+./bundle.sh
+cp -R .build/wrkspaces.app /Applications/
+open /Applications/wrkspaces.app
 ```
 
-Au premier lancement, macOS demande l'accès Accessibilité. Lancé depuis un terminal, c'est le terminal qui doit l'avoir.
+Au premier lancement, macOS demande l'accès Accessibilité : accordez-le et l'app démarre d'elle-même. Clic droit sur l'icône puis **Open at Login** pour la lancer avec la session.
+
+Après une recompilation, macOS ne reconnaît plus l'app : retirez-la de la liste Accessibilité (ou lancez `tccutil reset Accessibility io.github.te-o-o-o.wrkspaces`) et accordez l'accès à nouveau.
 
 ## Utilisation
 
