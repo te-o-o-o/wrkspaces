@@ -14,6 +14,12 @@ final class App: NSObject, NSApplicationDelegate {
         registerHotKeys { [unowned self] id in
             id > 100 ? moveFocused(to: Int(id) - 100) : switchTo(Int(id))
         }
+        // Cmd-Tab or a Dock click onto a window parked elsewhere: follow it.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [unowned self] _ in
+            if let w = focusedWindow(), let n = ws.workspace(of: w), n != ws.current { switchTo(n) }
+        }
     }
 
     func switchTo(_ n: Int) {
