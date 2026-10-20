@@ -4,13 +4,15 @@
 set -eu
 cd "$(dirname "$0")"
 
-VERSION=0.1.0  # keep in sync with the README badges
+VERSION=0.1.0  # the one version: README badges and the release tag must match it
 APP=.build/wrkspaces.app
 
-swift build -c release
+# Universal: one download for Apple Silicon and Intel Macs.
+ARCHS="--arch arm64 --arch x86_64"
+swift build -c release $ARCHS
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
-cp "$(swift build -c release --show-bin-path)/wrkspaces" "$APP/Contents/MacOS/"
+cp "$(swift build -c release $ARCHS --show-bin-path)/wrkspaces" "$APP/Contents/MacOS/"
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
