@@ -9,7 +9,7 @@
 - **Raccourcis déjà connus** : les mêmes que les Spaces de macOS.
 - **Vous suit** : Cmd-Tab ou le Dock vers une fenêtre d'un autre bureau vous y emmène.
 - **Rien de perdu** : quitter, Ctrl-C ou un plantage remet chaque fenêtre à l'écran.
-- **Aucune config** : une icône dans la barre de menus, avec le bureau courant.
+- **Aucune config** : une icône dans la barre de menus, une petite fenêtre avec des yeux et le numéro du bureau courant.
 
 ## Installation
 

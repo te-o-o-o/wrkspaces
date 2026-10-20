@@ -88,6 +88,10 @@ final class App: NSObject, NSApplicationDelegate {
     @objc func pick(_ sender: NSMenuItem) { switchTo(sender.tag) }
 
     func updateMenu() {
+        item.button?.image = mascot(workspace: ws.current)
+        item.button?.imagePosition = .imageLeft
+        // Monospaced digits so the item does not change width from 1 to 9.
+        item.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .medium)
         item.button?.title = "\(ws.current)"
         item.menu?.items.forEach { $0.state = $0.tag == ws.current ? .on : .off }
     }
