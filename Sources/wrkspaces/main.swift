@@ -4,15 +4,16 @@ import ServiceManagement
 import WrkspacesCore
 
 final class App: NSObject, NSApplicationDelegate {
-    var ws = Workspaces<AXUIElement>()
-    var saved: [AXUIElement: CGPoint] = [:]  // real position of each hidden window
-    var lastFocused: [Int: AXUIElement] = [:]
+    var ws = Workspaces<CGWindowID>()
+    var elements: [CGWindowID: AXUIElement] = [:]  // latest AX element of each window
+    var saved: [CGWindowID: CGPoint] = [:]  // real position of each hidden window
+    var lastFocused: [Int: CGWindowID] = [:]
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let switcher = Switcher()
 
     func applicationDidFinishLaunching(_: Notification) {
         recoverStrays()
-        ws.sync(allWindows())
+        refresh()
         setUpStatusItem()
         switcher.grid.onPick = { [unowned self] n in
             switcher.hide()
@@ -35,14 +36,14 @@ final class App: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [unowned self] _ in
-            if let w = focusedWindow(), let n = ws.workspace(of: w), n != ws.current { switchTo(n) }
+            if let id = focusedWindow()?.windowID, let n = ws.workspace(of: id), n != ws.current { switchTo(n) }
         }
     }
 
     func switchTo(_ n: Int) {
         guard n != ws.current else { return }
         refresh()
-        lastFocused[ws.current] = focusedWindow()
+        lastFocused[ws.current] = focusedWindow()?.windowID
         let (hide, show) = ws.switchTo(n)
         hide.forEach(park)
         show.forEach(unpark)
@@ -52,29 +53,31 @@ final class App: NSObject, NSApplicationDelegate {
 
     func moveFocused(to n: Int) {
         refresh()
-        guard let w = focusedWindow(), ws.move(w, to: n) else { return }
-        park(w)
+        guard let id = focusedWindow()?.windowID, ws.move(id, to: n) else { return }
+        park(id)
         focusOrNothing(ws.windows(in: ws.current).first)
     }
 
     /// With no window left to focus, keystrokes would still go to the hidden one:
     /// take the focus ourselves, we have no window so typing goes nowhere.
-    func focusOrNothing(_ w: AXUIElement?) {
-        if let w { focus(w) } else { NSApp.activate() }
+    func focusOrNothing(_ id: CGWindowID?) {
+        if let w = id.flatMap({ elements[$0] }) { focus(w) } else { NSApp.activate() }
     }
 
     func refresh() {
-        ws.sync(allWindows())
-        saved = saved.filter { ws.workspace(of: $0.key) != nil }
+        elements = Dictionary(allWindows().compactMap { w in w.windowID.map { ($0, w) } }, uniquingKeysWith: { first, _ in first })
+        ws.sync(Array(elements.keys))
+        saved = saved.filter { elements[$0.key] != nil }
     }
 
-    func park(_ w: AXUIElement) {
-        if let p = w.position, !isHidden(p, screens: screens) { saved[w] = p }
+    func park(_ id: CGWindowID) {
+        guard let w = elements[id] else { return }
+        if let p = w.position, !isHidden(p, screens: screens) { saved[id] = p }
         w.setPosition(hiddenCorner(screens: screens))
     }
 
-    func unpark(_ w: AXUIElement) {
-        w.setPosition(saved.removeValue(forKey: w) ?? fallbackPosition())
+    func unpark(_ id: CGWindowID) {
+        elements[id]?.setPosition(saved.removeValue(forKey: id) ?? fallbackPosition())
     }
 
     /// Windows left in the corner by a crash: bring them back before anything else.
@@ -85,7 +88,8 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     @objc func quit() {
-        saved.forEach { $0.key.setPosition($0.value) }
+        refresh()
+        saved.forEach { elements[$0.key]?.setPosition($0.value) }
         recoverStrays()  // anything still parked that we lost track of
         NSApp.terminate(nil)
     }
@@ -143,7 +147,7 @@ final class App: NSObject, NSApplicationDelegate {
     func overview() -> [[NSImage]] {
         refresh()
         return (1...workspaceCount).map { n in
-            Set(ws.windows(in: n).map(\.pid))
+            Set(ws.windows(in: n).compactMap { elements[$0]?.pid })
                 .compactMap { NSRunningApplication(processIdentifier: $0) }
                 .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
                 .compactMap(\.icon)

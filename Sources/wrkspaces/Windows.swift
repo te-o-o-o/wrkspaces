@@ -29,6 +29,19 @@ extension AXUIElement {
     }
 }
 
+// The one private call: AX has no public way from a window element to its CGWindowID.
+// Window managers all rely on it (AeroSpace, yabai, Rectangle) and it needs no SIP change.
+@_silgen_name("_AXUIElementGetWindow")
+private func _AXUIElementGetWindow(_ element: AXUIElement, _ id: UnsafeMutablePointer<CGWindowID>) -> AXError
+
+extension AXUIElement {
+    /// Stable for the window's whole life, unlike the element: an app may hand out a new one.
+    var windowID: CGWindowID? {
+        var id: CGWindowID = 0
+        return _AXUIElementGetWindow(self, &id) == .success ? id : nil
+    }
+}
+
 /// Standard, visible windows of every regular app. Minimized and native full-screen
 /// windows are skipped: they live outside our workspaces.
 func allWindows() -> [AXUIElement] {
