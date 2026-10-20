@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- Switcher shown 0.15 s after ⌃N if ⌃ is still held, like Cmd-Tab: `⌃` alone is too common (Ctrl-C, Ctrl-click) to trigger anything.
+- Testing it with System Events: `key code … using control down` releases ⌃ at the end; use `key down control` then a bare `key code`.
 - Workspaces emulated AeroSpace-style (windows parked off-screen) rather than real Spaces: no SIP, no private API, instant, survives macOS updates.
 - Shortcuts `⌃1…9` / `⌃⇧1…9` reuse the native Spaces ones: nothing to learn. Physical key codes, so they work the same on AZERTY.
 - Carbon `RegisterEventHotKey` for hotkeys: no extra permission, unlike a CGEvent tap.
@@ -17,7 +19,7 @@
 
 | OS | Status |
 |---|---|
-| macOS 27.0.1 (arm64) | switch ⌃1↔⌃2 and restore on SIGTERM verified, 1 screen, 7 apps; ⌃⇧N and Cmd-Tab follow not yet |
+| macOS 27.0.1 (arm64) | switch, ⌃⇧N, restore on SIGTERM, menu overview, switcher grid (held ⌃ shows it, quick tap does not) verified, 1 screen, 7 apps; Cmd-Tab follow and clicking a window in the menu not yet |
 
 ## Pitfalls
 
