@@ -1,0 +1,15 @@
+# Changelog
+
+## 0.1.0 (unreleased)
+
+### Added
+
+- Nine virtual desktops, switched with `⌃1` … `⌃9`, without any animation and without touching SIP.
+- `⌃⇧1` … `⌃⇧9` sends the focused window to another workspace.
+- Cmd-Tab and the Dock take you to the workspace of the window you pick.
+- Menu bar icon with the current workspace; a click opens a grid of the nine workspaces with their apps.
+- Keeping `⌃` held after `⌃N` shows the same grid, like Cmd-Tab.
+- Four icons to choose from under the grid: window, blob, flower and ring.
+- Foldable list of shortcuts under the grid.
+- Open at login from the icon's right-click menu.
+- Windows come back on screen when the app quits, is stopped with Ctrl-C or crashes.
