@@ -17,6 +17,7 @@ This project is outside the global stack table on purpose (macOS-only app, Swift
 ## Traps
 
 - Never touch SIP or private Spaces APIs. Workspaces are emulated: hidden windows are parked in the bottom-right corner (macOS refuses fully off-screen windows).
+- Track windows by `windowID` (CGWindowID), never by `AXUIElement`: an app may hand out a new element for the same window. Elements only live in `elements`, refreshed by `refresh()`.
 - Any exit path must put parked windows back (`quit()`, SIGINT/SIGTERM); a crash is caught by `recoverStrays()` on next launch.
 - `#expect` cannot call `mutating` methods: store the result first.
 - `swift test` sometimes fails with "plugin for module 'TestingMacros' not found" (Command Line Tools bug, random, even with no change): just rerun.
