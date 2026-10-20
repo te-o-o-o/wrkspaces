@@ -63,8 +63,12 @@ final class Switcher {
         panel.setFrameOrigin(NSPoint(x: x, y: anchor.minY - panel.frame.height - 6))
         panel.ignoresMouseEvents = false
         panel.orderFrontRegardless()
-        // A global monitor only sees clicks in other apps: exactly "outside the grid".
-        outsideClick = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in self?.hide() }
+        // A global monitor only sees clicks in other apps: exactly "outside the grid". The menu
+        // bar icon counts as another app here, so skip it: its own click toggles the grid, and
+        // closing on mouse down would reopen it on mouse up.
+        outsideClick = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            if !anchor.contains(NSEvent.mouseLocation) { self?.hide() }
+        }
     }
 
     func hide() {
