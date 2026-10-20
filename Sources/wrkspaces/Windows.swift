@@ -44,9 +44,11 @@ func allWindows() -> [AXUIElement] {
         }
 }
 
+/// Asked to AX live: NSWorkspace.frontmostApplication is only refreshed by our run loop,
+/// so a shortcut pressed right after switching apps would act on the previous one.
 func focusedWindow() -> AXUIElement? {
-    guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
-    return AXUIElementCreateApplication(app.processIdentifier).get(kAXFocusedWindowAttribute)
+    guard let app: AXUIElement = AXUIElementCreateSystemWide().get(kAXFocusedApplicationAttribute) else { return nil }
+    return app.get(kAXFocusedWindowAttribute)
 }
 
 func focus(_ w: AXUIElement) {
