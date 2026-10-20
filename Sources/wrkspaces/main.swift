@@ -7,6 +7,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var saved: [AXUIElement: CGPoint] = [:]  // real position of each hidden window
     var lastFocused: [Int: AXUIElement] = [:]
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    let switcher = Switcher()
 
     func applicationDidFinishLaunching(_: Notification) {
         recoverStrays()
@@ -14,6 +15,10 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
         buildMenu()
         registerHotKeys { [unowned self] id in
             id > 100 ? moveFocused(to: Int(id) - 100) : switchTo(Int(id))
+            // Like Cmd-Tab: a quick tap shows nothing, keeping ⌃ held shows the grid.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
+                if NSEvent.modifierFlags.contains(.control) { switcher.show(overview(), current: ws.current) }
+            }
         }
         // Cmd-Tab or a Dock click onto a window parked elsewhere: follow it.
         NSWorkspace.shared.notificationCenter.addObserver(

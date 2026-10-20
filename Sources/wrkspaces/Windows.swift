@@ -64,12 +64,13 @@ func fallbackPosition() -> CGPoint {
 /// What the menu and the switcher show about a window.
 struct WindowInfo {
     let window: AXUIElement
+    let app: NSRunningApplication?
     let appName: String
     let title: String
     let icon: NSImage?
 
     init(_ w: AXUIElement) {
-        let app = NSRunningApplication(processIdentifier: w.pid)
+        app = NSRunningApplication(processIdentifier: w.pid)
         window = w
         appName = app?.localizedName ?? "?"
         title = w.get(kAXTitleAttribute) ?? ""
