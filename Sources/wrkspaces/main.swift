@@ -18,6 +18,12 @@ final class App: NSObject, NSApplicationDelegate {
             switcher.hide()
             switchTo(n)
         }
+        // The grid stays open so the new icon can be seen next to the others.
+        switcher.grid.onPickIcon = { [unowned self] style in
+            IconStyle.saved = style
+            updateStatusItem()
+            switcher.grid.needsDisplay = true
+        }
         registerHotKeys { [unowned self] id in
             id > 100 ? moveFocused(to: Int(id) - 100) : switchTo(Int(id))
             // Like Cmd-Tab: a quick tap shows nothing, keeping ⌃ held shows the grid.
@@ -97,7 +103,7 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     func updateStatusItem() {
-        item.button?.image = mascot(workspace: ws.current)
+        item.button?.image = mascot(IconStyle.saved, workspace: ws.current)
         item.button?.title = "\(ws.current)"
     }
 

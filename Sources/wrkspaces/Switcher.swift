@@ -11,6 +11,7 @@ final class Switcher {
     var isVisible: Bool { panel.isVisible }
 
     init() {
+        grid.autoresizingMask = [.width, .height]
         panel = NSPanel(contentRect: grid.frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
         panel.level = .popUpMenu
         panel.isOpaque = false
@@ -22,10 +23,14 @@ final class Switcher {
         let blur = NSVisualEffectView(frame: grid.frame)
         blur.material = .hudWindow
         blur.state = .active
-        blur.maskImage = NSImage(size: grid.frame.size, flipped: false) { r in
+        // A stretchable mask, so the corners stay round when the icon row grows the panel.
+        let mask = NSImage(size: NSSize(width: 37, height: 37), flipped: false) { r in
             NSBezierPath(roundedRect: r, xRadius: 18, yRadius: 18).fill()
             return true
         }
+        mask.capInsets = NSEdgeInsets(top: 18, left: 18, bottom: 18, right: 18)
+        mask.resizingMode = .stretch
+        blur.maskImage = mask
         blur.addSubview(grid)
         panel.contentView = blur
     }
@@ -34,8 +39,9 @@ final class Switcher {
     func showWhileControlHeld(_ apps: [[NSImage]], current: Int) {
         update(apps, current: current)
         guard !panel.isVisible else { return }
+        resize(showsIcons: false)
         if let screen = NSScreen.main {
-            panel.setFrameOrigin(NSPoint(x: screen.frame.midX - grid.frame.width / 2, y: screen.frame.midY - grid.frame.height / 2))
+            panel.setFrameOrigin(NSPoint(x: screen.frame.midX - panel.frame.width / 2, y: screen.frame.midY - panel.frame.height / 2))
         }
         panel.ignoresMouseEvents = true
         panel.orderFrontRegardless()
@@ -45,14 +51,16 @@ final class Switcher {
         }
     }
 
-    /// Under the menu bar icon: click a workspace to go there, click anywhere else to close.
+    /// Under the menu bar icon, with the icon picker below the grid: click a workspace
+    /// to go there, an icon to use it, anywhere else to close.
     func showBelow(_ anchor: NSRect, _ apps: [[NSImage]], current: Int) {
         update(apps, current: current)
-        var x = anchor.midX - grid.frame.width / 2
+        resize(showsIcons: true)
+        var x = anchor.midX - panel.frame.width / 2
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(anchor.origin) }) {
-            x = min(max(x, screen.visibleFrame.minX + 8), screen.visibleFrame.maxX - grid.frame.width - 8)
+            x = min(max(x, screen.visibleFrame.minX + 8), screen.visibleFrame.maxX - panel.frame.width - 8)
         }
-        panel.setFrameOrigin(NSPoint(x: x, y: anchor.minY - grid.frame.height - 6))
+        panel.setFrameOrigin(NSPoint(x: x, y: anchor.minY - panel.frame.height - 6))
         panel.ignoresMouseEvents = false
         panel.orderFrontRegardless()
         // A global monitor only sees clicks in other apps: exactly "outside the grid".
@@ -67,6 +75,11 @@ final class Switcher {
         panel.orderOut(nil)
     }
 
+    private func resize(showsIcons: Bool) {
+        grid.showsIcons = showsIcons
+        panel.setContentSize(GridView.size(showsIcons: showsIcons))
+    }
+
     private func update(_ apps: [[NSImage]], current: Int) {
         grid.apps = apps
         grid.current = current
@@ -78,13 +91,18 @@ final class GridView: NSView {
     static let tile = NSSize(width: 112, height: 76)
     static let gap: CGFloat = 10
     static let pad: CGFloat = 16
-    static var size: NSSize {
-        NSSize(width: pad * 2 + tile.width * 3 + gap * 2, height: pad * 2 + tile.height * 3 + gap * 2)
+    static let iconBox: CGFloat = 32
+    static let size = size(showsIcons: false)
+    static func size(showsIcons: Bool) -> NSSize {
+        NSSize(width: pad * 2 + tile.width * 3 + gap * 2,
+               height: pad * 2 + tile.height * 3 + gap * 2 + (showsIcons ? iconBox + gap * 1.5 : 0))
     }
 
     var apps: [[NSImage]] = []  // per workspace, one icon per app
     var current = 1
+    var showsIcons = false
     var onPick: ((Int) -> Void)?
+    var onPickIcon: ((IconStyle) -> Void)?
 
     override var isFlipped: Bool { true }  // workspace 1 top-left, like a numpad read top-down
 
@@ -94,6 +112,14 @@ final class GridView: NSView {
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
         if let i = apps.indices.first(where: { tileRect($0).contains(p) }) { onPick?(i + 1) }
+        if showsIcons, let style = IconStyle.allCases.first(where: { iconRect($0).contains(p) }) { onPickIcon?(style) }
+    }
+
+    func iconRect(_ style: IconStyle) -> NSRect {
+        let (box, gap) = (Self.iconBox, Self.gap)
+        let k = CGFloat(IconStyle.allCases.firstIndex(of: style)!)
+        let row = CGFloat(IconStyle.allCases.count) * (box + gap) - gap
+        return NSRect(x: bounds.midX - row / 2 + k * (box + gap), y: tileRect(8).maxY + gap * 1.5, width: box, height: box)
     }
 
     func tileRect(_ i: Int) -> NSRect {
@@ -131,6 +157,28 @@ final class GridView: NSView {
                     .font: NSFont.systemFont(ofSize: 11, weight: .medium), .foregroundColor: NSColor.secondaryLabelColor,
                 ])
             }
+        }
+        guard showsIcons else { return }
+        for style in IconStyle.allCases {
+            let r = iconRect(style)
+            let box = NSBezierPath(roundedRect: r, xRadius: 8, yRadius: 8)
+            let isCurrent = style == IconStyle.saved
+            (isCurrent ? NSColor.controlAccentColor.withAlphaComponent(0.3) : NSColor.labelColor.withAlphaComponent(0.06)).setFill()
+            box.fill()
+            if isCurrent {
+                NSColor.controlAccentColor.setStroke()
+                box.lineWidth = 1.5
+                box.stroke()
+            }
+            // Template images draw black outside the menu bar: tint them like text.
+            let icon = mascot(style, workspace: current)
+            let tinted = NSImage(size: icon.size, flipped: false) { rr in
+                icon.draw(in: rr)
+                NSColor.labelColor.set()
+                rr.fill(using: .sourceAtop)
+                return true
+            }
+            tinted.draw(in: r.insetBy(dx: 7, dy: 7), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
         }
     }
 }
