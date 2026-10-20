@@ -15,6 +15,7 @@
 
 ## Not handled yet
 
+- Windows are keyed by their AX element. Zen (Firefox based) once came back at the fallback position after a ⌃⇧N round trip, which suggests its element changed while parked: keying by window id would be sturdier.
 - Multiple screens (windows are parked past all screens, but workspaces are global).
 - Focus change inside one app (⌘`) onto a parked window does not follow it.
 - i18n of the menu.
