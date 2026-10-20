@@ -20,6 +20,8 @@ final class Switcher {
         panel.animationBehavior = .none
         panel.ignoresMouseEvents = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // The HUD material is dark whatever the system theme: keep the text light on it.
+        panel.appearance = NSAppearance(named: .darkAqua)
         let blur = NSVisualEffectView(frame: grid.frame)
         blur.material = .hudWindow
         blur.state = .active
@@ -166,6 +168,10 @@ final class GridView: NSView {
     }
 
     override func draw(_: NSRect) {
+        // The blur alone turns light grey over a bright wallpaper and the numbers fade:
+        // a fixed dark veil keeps the contrast whatever is behind.
+        NSColor.black.withAlphaComponent(0.3).setFill()
+        NSBezierPath(roundedRect: bounds, xRadius: 18, yRadius: 18).fill()
         for (i, icons) in apps.enumerated() {
             let r = tileRect(i)
             let box = NSBezierPath(roundedRect: r, xRadius: 10, yRadius: 10)
@@ -179,7 +185,7 @@ final class GridView: NSView {
             }
             ("\(i + 1)" as NSString).draw(at: NSPoint(x: r.minX + 9, y: r.minY + 6), withAttributes: [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold),
-                .foregroundColor: isCurrent ? NSColor.labelColor : NSColor.secondaryLabelColor,
+                .foregroundColor: NSColor.labelColor,
             ])
             let shown = icons.prefix(3)  // 3 × 28 px is what a tile holds
             let side: CGFloat = 28
