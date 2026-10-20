@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- The icon opens the grid rather than a menu: lighter to read. Quit sits on right-click, the usual place for menu bar apps.
+- Testing clicks: the status item moves with the frontmost app's menus, so read its position before clicking (`position of menu bar item 1 of menu bar 1`).
 - Switcher shown 0.15 s after ⌃N if ⌃ is still held, like Cmd-Tab: `⌃` alone is too common (Ctrl-C, Ctrl-click) to trigger anything.
 - Testing it with System Events: `key code … using control down` releases ⌃ at the end; use `key down control` then a bare `key code`.
 - Workspaces emulated AeroSpace-style (windows parked off-screen) rather than real Spaces: no SIP, no private API, instant, survives macOS updates.
@@ -19,7 +21,7 @@
 
 | OS | Status |
 |---|---|
-| macOS 27.0.1 (arm64) | switch, ⌃⇧N, restore on SIGTERM, menu overview, switcher grid (held ⌃ shows it, quick tap does not) verified, 1 screen, 7 apps; Cmd-Tab follow and clicking a window in the menu not yet |
+| macOS 27.0.1 (arm64) | switch, ⌃⇧N, restore on SIGTERM, switcher grid (held ⌃ shows it, quick tap does not), grid from the icon (click a tile, click outside closes, right-click Quit) verified, 1 screen, 7 apps; Cmd-Tab follow seen working by side effect |
 
 ## Pitfalls
 
