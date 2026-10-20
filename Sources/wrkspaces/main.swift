@@ -81,10 +81,13 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateMenu()
     }
 
-    /// Windows of each workspace, sorted by app then title.
+    /// One entry per app on each workspace, sorted by name: app names only, no window titles, to stay light.
     func overview() -> [[WindowInfo]] {
         refresh()
-        return (1...workspaceCount).map { ws.windows(in: $0).map(WindowInfo.init).sorted { $0.label < $1.label } }
+        return (1...workspaceCount).map { n in
+            var seen = Set<String>()
+            return ws.windows(in: n).map(WindowInfo.init).filter { seen.insert($0.appName).inserted }.sorted { $0.appName < $1.appName }
+        }
     }
 
     /// Rebuilt on every open, so it shows where each window is right now.
@@ -97,7 +100,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
             row.tag = n
             row.state = n == ws.current ? .on : .off
             for w in windows {
-                let wi = menu.addItem(withTitle: w.label, action: #selector(pickWindow(_:)), keyEquivalent: "")
+                let wi = menu.addItem(withTitle: w.appName, action: #selector(pickWindow(_:)), keyEquivalent: "")
                 wi.target = self
                 wi.indentationLevel = 1
                 wi.image = w.icon
