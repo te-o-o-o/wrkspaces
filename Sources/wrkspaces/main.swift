@@ -79,6 +79,7 @@ final class App: NSObject, NSApplicationDelegate {
 
     @objc func quit() {
         saved.forEach { $0.key.setPosition($0.value) }
+        recoverStrays()  // anything still parked that we lost track of
         NSApp.terminate(nil)
     }
 
