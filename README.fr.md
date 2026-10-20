@@ -10,6 +10,7 @@
 - **Vous suit** : Cmd-Tab ou le Dock vers une fenêtre d'un autre bureau vous y emmène.
 - **Rien de perdu** : quitter, Ctrl-C ou un plantage remet chaque fenêtre à l'écran.
 - **Aucune config** : une icône dans la barre de menus, une petite fenêtre avec des yeux et le numéro du bureau courant.
+- **Voir où est tout** : son menu liste chaque bureau avec ses fenêtres ; un clic sur l'une d'elles vous y emmène.
 
 ## Installation
 
