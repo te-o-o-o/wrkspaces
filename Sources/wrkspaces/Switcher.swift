@@ -4,14 +4,9 @@ import AppKit
 /// shortcut (like Cmd-Tab), or from the menu bar icon. No fade: it appears and goes at once.
 final class Switcher {
     private let panel: NSPanel
-    private let grid = GridView(frame: NSRect(origin: .zero, size: GridView.size))
+    let grid = GridView(frame: NSRect(origin: .zero, size: GridView.size))
     private var poll: Timer?
     private var outsideClick: Any?
-
-    var onPick: ((Int) -> Void)? {
-        get { grid.onPick }
-        set { grid.onPick = newValue }
-    }
 
     var isVisible: Bool { panel.isVisible }
 
