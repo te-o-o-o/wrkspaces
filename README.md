@@ -4,10 +4,7 @@
 <p align="center"><a href="#features">Features</a> · <a href="#install">Install</a> · <a href="#usage">Usage</a> · <a href="#development">Development</a> · <a href="README.fr.md">Français</a></p>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/grid-dark.png">
-    <img src="docs/grid-light.png" width="440" alt="The wrkspaces grid: nine workspaces with the icons of their apps, the menu bar icon picker and the list of shortcuts">
-  </picture>
+  <img src="docs/menubar.jpg" width="560" alt="The wrkspaces icon in the macOS menu bar, its grid open below: nine workspaces with the icons of their apps and the icon picker">
 </p>
 
 ## Features
@@ -40,6 +37,8 @@ After a rebuild, macOS no longer recognises the app: remove it from the Accessib
 |---|---|
 | `⌃1` … `⌃9` | go to workspace N |
 | `⌃⇧1` … `⌃⇧9` | send the focused window to workspace N |
+
+<p align="center"><img src="docs/hold.jpg" width="560" alt="The grid shown while ⌃ is held after ⌃2: workspace 2 highlighted, each workspace with the icons of its apps"></p>
 
 If macOS's own "Switch to Desktop N" shortcuts are on, turn them off: System Settings > Keyboard > Keyboard Shortcuts > Mission Control.
 
