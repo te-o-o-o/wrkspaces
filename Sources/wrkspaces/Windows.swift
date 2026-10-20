@@ -59,9 +59,12 @@ func allWindows() -> [AXUIElement] {
 
 /// Asked to AX live: NSWorkspace.frontmostApplication is only refreshed by our run loop,
 /// so a shortcut pressed right after switching apps would act on the previous one.
+/// The system-wide query sometimes fails (kAXErrorCannotComplete, seen with Obsidian in front):
+/// then fall back to NSWorkspace, which can only lag right after an app switch.
 func focusedWindow() -> AXUIElement? {
-    guard let app: AXUIElement = AXUIElementCreateSystemWide().get(kAXFocusedApplicationAttribute) else { return nil }
-    return app.get(kAXFocusedWindowAttribute)
+    let app: AXUIElement? = AXUIElementCreateSystemWide().get(kAXFocusedApplicationAttribute)
+        ?? NSWorkspace.shared.frontmostApplication.map { AXUIElementCreateApplication($0.processIdentifier) }
+    return app?.get(kAXFocusedWindowAttribute)
 }
 
 func focus(_ w: AXUIElement) {
