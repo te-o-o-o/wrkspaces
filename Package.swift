@@ -7,6 +7,7 @@ let package = Package(
     targets: [
         // Pure workspace state, no AppKit: testable without a screen or permissions.
         .target(name: "WrkspacesCore"),
+        .executableTarget(name: "wrkspaces", dependencies: ["WrkspacesCore"]),
         .testTarget(name: "WrkspacesCoreTests", dependencies: ["WrkspacesCore"]),
     ],
     // Swift 5 mode: the AX and Carbon C callbacks fight Swift 6 strict concurrency for no real gain here.
