@@ -14,7 +14,7 @@ final class App: NSObject, NSApplicationDelegate {
         recoverStrays()
         ws.sync(allWindows())
         setUpStatusItem()
-        switcher.onPick = { [unowned self] n in
+        switcher.grid.onPick = { [unowned self] n in
             switcher.hide()
             switchTo(n)
         }
@@ -189,13 +189,12 @@ NSApplication.shared.delegate = app
 NSApplication.shared.setActivationPolicy(.accessory)
 
 // Ctrl-C in a terminal must not leave windows stranded in the corner.
-var signalSources: [DispatchSourceSignal] = []
-for sig in [SIGINT, SIGTERM] {
+let signalSources = [SIGINT, SIGTERM].map { sig in
     signal(sig, SIG_IGN)
     let src = DispatchSource.makeSignalSource(signal: sig, queue: .main)
     src.setEventHandler { app.quit() }
     src.resume()
-    signalSources.append(src)
+    return src
 }
 
 NSApplication.shared.run()
