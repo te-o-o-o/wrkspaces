@@ -27,6 +27,14 @@ jobs:
       - name: Zip the app
         run: ditto -c -k --norsrc --noextattr --keepParent .build/wrkspaces.app wrkspaces-macos-universal.zip
 
+      - name: Make the disk image
+        run: |
+          # The app next to an Applications link: open it and drag one onto the other.
+          mkdir dmg
+          cp -R .build/wrkspaces.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname wrkspaces -srcfolder dmg -ov -format UDZO wrkspaces-macos-universal.dmg
+
       - name: Write the release notes
         run: |
           version=${GITHUB_REF_NAME#v}
@@ -36,7 +44,7 @@ jobs:
 
           ### Install
 
-          Download `wrkspaces-macos-universal.zip`, unzip it and move `wrkspaces.app` to Applications.
+          Download `wrkspaces-macos-universal.dmg`, open it and drag `wrkspaces.app` onto Applications. The `.zip` holds the same app.
 
           The app is not signed with an Apple Developer ID, so macOS blocks it on first launch. Either right-click it and pick **Open**, or run once:
 
@@ -50,4 +58,4 @@ jobs:
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" wrkspaces-macos-universal.zip --title "$GITHUB_REF_NAME" --notes-file notes.md
+        run: gh release create "$GITHUB_REF_NAME" wrkspaces-macos-universal.dmg wrkspaces-macos-universal.zip --title "$GITHUB_REF_NAME" --notes-file notes.md
