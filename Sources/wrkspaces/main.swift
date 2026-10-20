@@ -39,7 +39,7 @@ final class App: NSObject, NSApplicationDelegate {
         let (hide, show) = ws.switchTo(n)
         hide.forEach(park)
         show.forEach(unpark)
-        if let w = lastFocused[n].flatMap({ show.contains($0) ? $0 : nil }) ?? show.first { focus(w) }
+        focusOrNothing(lastFocused[n].flatMap { show.contains($0) ? $0 : nil } ?? show.first)
         updateStatusItem()
     }
 
@@ -47,7 +47,13 @@ final class App: NSObject, NSApplicationDelegate {
         refresh()
         guard let w = focusedWindow(), ws.move(w, to: n) else { return }
         park(w)
-        if let next = ws.windows(in: ws.current).first { focus(next) }
+        focusOrNothing(ws.windows(in: ws.current).first)
+    }
+
+    /// With no window left to focus, keystrokes would still go to the hidden one:
+    /// take the focus ourselves, we have no window so typing goes nowhere.
+    func focusOrNothing(_ w: AXUIElement?) {
+        if let w { focus(w) } else { NSApp.activate() }
     }
 
     func refresh() {
