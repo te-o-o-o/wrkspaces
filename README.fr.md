@@ -18,7 +18,7 @@
 
 ## Installation
 
-Téléchargez `wrkspaces-macos-universal.zip` depuis la [dernière release](https://github.com/te-o-o-o/wrkspaces/releases/latest), dézippez-le et placez `wrkspaces.app` dans Applications. Il tourne sur les Mac Apple Silicon et Intel, macOS 14 ou plus récent.
+Téléchargez `wrkspaces-macos-universal.dmg` depuis la [dernière release](https://github.com/te-o-o-o/wrkspaces/releases/latest), ouvrez-le et glissez `wrkspaces.app` sur Applications (un `.zip` de la même app est aussi disponible). Il tourne sur les Mac Apple Silicon et Intel, macOS 14 ou plus récent.
 
 L'app n'est pas signée avec un identifiant développeur Apple, donc macOS la bloque au premier lancement : clic droit dessus puis **Ouvrir**, ou lancez une fois `xattr -d com.apple.quarantine /Applications/wrkspaces.app`.
 

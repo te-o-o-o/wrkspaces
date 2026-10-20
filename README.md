@@ -18,7 +18,7 @@
 
 ## Install
 
-Download `wrkspaces-macos-universal.zip` from the [latest release](https://github.com/te-o-o-o/wrkspaces/releases/latest), unzip it and move `wrkspaces.app` to Applications. It runs on Apple Silicon and Intel Macs, macOS 14 or later.
+Download `wrkspaces-macos-universal.dmg` from the [latest release](https://github.com/te-o-o-o/wrkspaces/releases/latest), open it and drag `wrkspaces.app` onto Applications (a `.zip` of the same app is there too). It runs on Apple Silicon and Intel Macs, macOS 14 or later.
 
 The app is not signed with an Apple Developer ID, so macOS blocks it on first launch: right-click it and pick **Open**, or run `xattr -d com.apple.quarantine /Applications/wrkspaces.app` once.
 
