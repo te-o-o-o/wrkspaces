@@ -81,7 +81,7 @@ final class Switcher {
 
     private func resize(showsIcons: Bool) {
         grid.showsIcons = showsIcons
-        panel.setContentSize(GridView.size(showsIcons: showsIcons))
+        panel.setContentSize(GridView.size(showsIcons: showsIcons, showsShortcuts: GridView.showsShortcuts))
     }
 
     private func update(_ apps: [[NSImage]], current: Int) {
@@ -96,10 +96,31 @@ final class GridView: NSView {
     static let gap: CGFloat = 10
     static let pad: CGFloat = 16
     static let iconBox: CGFloat = 32
-    static let size = size(showsIcons: false)
-    static func size(showsIcons: Bool) -> NSSize {
-        NSSize(width: pad * 2 + tile.width * 3 + gap * 2,
-               height: pad * 2 + tile.height * 3 + gap * 2 + (showsIcons ? iconBox + gap * 1.5 : 0))
+    static let lineHeight: CGFloat = 18
+    // Vertical layout, top-down: tiles, then (from the menu bar icon only) icons, the
+    // shortcuts toggle and, when unfolded, the shortcut lines.
+    static let tilesBottom = pad + tile.height * 3 + gap * 2
+    static let iconsTop = tilesBottom + gap * 1.5
+    static let toggleTop = iconsTop + iconBox + 8
+    static let linesTop = toggleTop + lineHeight + 4
+    static let shortcuts = [
+        ("⌃1 … ⌃9", "Go to workspace"),
+        ("⌃⇧1 … ⌃⇧9", "Send the window there"),
+        ("Hold ⌃", "Show this grid"),
+        ("Right-click icon", "Open at login, quit"),
+    ]
+
+    static let size = size(showsIcons: false, showsShortcuts: false)
+    static func size(showsIcons: Bool, showsShortcuts: Bool) -> NSSize {
+        let bottom = !showsIcons ? tilesBottom
+            : showsShortcuts ? linesTop + CGFloat(shortcuts.count) * lineHeight
+            : toggleTop + lineHeight
+        return NSSize(width: pad * 2 + tile.width * 3 + gap * 2, height: bottom + pad)
+    }
+
+    static var showsShortcuts: Bool {
+        get { UserDefaults.standard.bool(forKey: "showShortcuts") }
+        set { UserDefaults.standard.set(newValue, forKey: "showShortcuts") }
     }
 
     var apps: [[NSImage]] = []  // per workspace, one icon per app
@@ -116,14 +137,26 @@ final class GridView: NSView {
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
         if let i = apps.indices.first(where: { tileRect($0).contains(p) }) { onPick?(i + 1) }
-        if showsIcons, let style = IconStyle.allCases.first(where: { iconRect($0).contains(p) }) { onPickIcon?(style) }
+        guard showsIcons else { return }
+        if let style = IconStyle.allCases.first(where: { iconRect($0).contains(p) }) { onPickIcon?(style) }
+        if toggleRect.contains(p) {
+            Self.showsShortcuts.toggle()
+            // Grow or shrink downwards: the panel hangs from the menu bar.
+            if let w = window {
+                let size = Self.size(showsIcons: true, showsShortcuts: Self.showsShortcuts)
+                w.setFrame(NSRect(x: w.frame.minX, y: w.frame.maxY - size.height, width: size.width, height: size.height), display: true)
+            }
+            needsDisplay = true
+        }
     }
+
+    var toggleRect: NSRect { NSRect(x: Self.pad, y: Self.toggleTop, width: bounds.width - Self.pad * 2, height: Self.lineHeight) }
 
     func iconRect(_ style: IconStyle) -> NSRect {
         let (box, gap) = (Self.iconBox, Self.gap)
         let k = CGFloat(IconStyle.allCases.firstIndex(of: style)!)
         let row = CGFloat(IconStyle.allCases.count) * (box + gap) - gap
-        return NSRect(x: bounds.midX - row / 2 + k * (box + gap), y: tileRect(8).maxY + gap * 1.5, width: box, height: box)
+        return NSRect(x: bounds.midX - row / 2 + k * (box + gap), y: Self.iconsTop, width: box, height: box)
     }
 
     func tileRect(_ i: Int) -> NSRect {
@@ -183,6 +216,18 @@ final class GridView: NSView {
                 return true
             }
             tinted.draw(in: r.insetBy(dx: 7, dy: 7), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+        }
+        let small = NSFont.systemFont(ofSize: 12)
+        ((Self.showsShortcuts ? "▾  Shortcuts" : "▸  Shortcuts") as NSString).draw(
+            at: NSPoint(x: toggleRect.minX + 4, y: toggleRect.minY + 1),
+            withAttributes: [.font: small, .foregroundColor: NSColor.secondaryLabelColor])
+        guard Self.showsShortcuts else { return }
+        for (k, (keys, action)) in Self.shortcuts.enumerated() {
+            let y = Self.linesTop + CGFloat(k) * Self.lineHeight
+            (keys as NSString).draw(at: NSPoint(x: Self.pad + 18, y: y),
+                                    withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold), .foregroundColor: NSColor.labelColor])
+            (action as NSString).draw(at: NSPoint(x: Self.pad + 140, y: y),
+                                      withAttributes: [.font: small, .foregroundColor: NSColor.secondaryLabelColor])
         }
     }
 }
