@@ -12,7 +12,7 @@ This project is outside the global stack table on purpose (macOS-only app, Swift
 
 - `swift build`, `swift test`, `swift run wrkspaces`
 - `./bundle.sh`: universal release build packed as `.build/wrkspaces.app` (ad-hoc signed, `LSUIElement`); its `VERSION` is the one version
-- Release: bump `VERSION` in `bundle.sh` and the README badges → date the CHANGELOG section → `chore: release X.Y.Z` → `git tag vX.Y.Z && git push --tags`; `release.yml` checks the tag against `VERSION`, tests, zips the app and publishes the GitHub release
+- Release: bump `VERSION` in `bundle.sh` and the README badges → date the CHANGELOG section → `chore: release X.Y.Z` → `git tag vX.Y.Z && git push --tags`; `release.yml` checks the tag against `VERSION`, tests, packs the app as a `.dmg` (with an Applications link) and a `.zip`, and publishes the GitHub release
 - Only Command Line Tools here (no Xcode): tests use Swift Testing, not XCTest.
 
 ## Traps
