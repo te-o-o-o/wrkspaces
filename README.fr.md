@@ -4,7 +4,7 @@
 <p align="center"><a href="#fonctionnalités">Fonctionnalités</a> · <a href="#installation">Installation</a> · <a href="#utilisation">Utilisation</a> · <a href="#développement">Développement</a> · <a href="README.md">English</a></p>
 
 <p align="center">
-  <img src="docs/menubar.jpg" width="560" alt="L'icône de wrkspaces dans la barre de menus de macOS, sa grille ouverte en dessous : neuf bureaux avec les icônes de leurs apps et le choix de l'icône">
+  <img src="docs/menubar.jpg" width="560" alt="L'icône de wrkspaces dans la barre de menus de macOS, sa grille ouverte en dessous : neuf bureaux avec les icônes de leurs apps, le choix de l'icône et la liste des raccourcis">
 </p>
 
 ## Fonctionnalités
@@ -38,7 +38,7 @@ Après une recompilation, macOS ne reconnaît plus l'app : retirez-la de la list
 | `⌃1` … `⌃9` | aller au bureau N |
 | `⌃⇧1` … `⌃⇧9` | envoyer la fenêtre active au bureau N |
 
-<p align="center"><img src="docs/hold.jpg" width="560" alt="La grille affichée tant que ⌃ reste enfoncé après ⌃2 : le bureau 2 en surbrillance, chaque bureau avec les icônes de ses apps"></p>
+<p align="center"><img src="docs/hold.jpg" width="560" alt="La grille affichée tant que ⌃ reste enfoncé, au centre de l'écran : le bureau courant en surbrillance, chaque bureau avec les icônes de ses apps"></p>
 
 Si les raccourcis natifs « Passer au bureau N » sont activés, désactivez-les : Réglages Système > Clavier > Raccourcis clavier > Mission Control.
 
