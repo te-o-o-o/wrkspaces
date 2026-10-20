@@ -2,7 +2,7 @@ import AppKit
 import Carbon.HIToolbox
 import WrkspacesCore
 
-final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
+final class App: NSObject, NSApplicationDelegate {
     var ws = Workspaces<AXUIElement>()
     var saved: [AXUIElement: CGPoint] = [:]  // real position of each hidden window
     var lastFocused: [Int: AXUIElement] = [:]
@@ -12,12 +12,16 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         recoverStrays()
         ws.sync(allWindows())
-        buildMenu()
+        setUpStatusItem()
+        switcher.onPick = { [unowned self] n in
+            switcher.hide()
+            switchTo(n)
+        }
         registerHotKeys { [unowned self] id in
             id > 100 ? moveFocused(to: Int(id) - 100) : switchTo(Int(id))
             // Like Cmd-Tab: a quick tap shows nothing, keeping ⌃ held shows the grid.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
-                if NSEvent.modifierFlags.contains(.control) { switcher.show(overview(), current: ws.current) }
+                if NSEvent.modifierFlags.contains(.control) { switcher.showWhileControlHeld(overview(), current: ws.current) }
             }
         }
         // Cmd-Tab or a Dock click onto a window parked elsewhere: follow it.
@@ -36,7 +40,7 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
         hide.forEach(park)
         show.forEach(unpark)
         if let w = lastFocused[n].flatMap({ show.contains($0) ? $0 : nil }) ?? show.first { focus(w) }
-        updateMenu()
+        updateStatusItem()
     }
 
     func moveFocused(to n: Int) {
@@ -74,57 +78,47 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: menu bar
 
-    func buildMenu() {
-        let menu = NSMenu()
-        menu.delegate = self
-        item.menu = menu
-        updateMenu()
-    }
-
-    /// One entry per app on each workspace, sorted by name: app names only, no window titles, to stay light.
-    func overview() -> [[WindowInfo]] {
-        refresh()
-        return (1...workspaceCount).map { n in
-            var seen = Set<String>()
-            return ws.windows(in: n).map(WindowInfo.init).filter { seen.insert($0.appName).inserted }.sorted { $0.appName < $1.appName }
-        }
-    }
-
-    /// Rebuilt on every open, so it shows where each window is right now.
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-        for (i, windows) in overview().enumerated() {
-            let n = i + 1
-            let row = menu.addItem(withTitle: windows.isEmpty ? "\(n)  —" : "\(n)", action: #selector(pick(_:)), keyEquivalent: "")
-            row.target = self
-            row.tag = n
-            row.state = n == ws.current ? .on : .off
-            for w in windows {
-                let wi = menu.addItem(withTitle: w.appName, action: #selector(pickWindow(_:)), keyEquivalent: "")
-                wi.target = self
-                wi.indentationLevel = 1
-                wi.image = w.icon
-                wi.representedObject = w.window
-            }
-        }
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q").target = self
-    }
-
-    @objc func pick(_ sender: NSMenuItem) { switchTo(sender.tag) }
-
-    @objc func pickWindow(_ sender: NSMenuItem) {
-        let w = sender.representedObject as! AXUIElement
-        if let n = ws.workspace(of: w) { switchTo(n) }
-        focus(w)
-    }
-
-    func updateMenu() {
-        item.button?.image = mascot(workspace: ws.current)
+    func setUpStatusItem() {
         item.button?.imagePosition = .imageLeft
         // Monospaced digits so the item does not change width from 1 to 9.
         item.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .medium)
+        item.button?.target = self
+        item.button?.action = #selector(statusItemClicked)
+        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        updateStatusItem()
+    }
+
+    func updateStatusItem() {
+        item.button?.image = mascot(workspace: ws.current)
         item.button?.title = "\(ws.current)"
+    }
+
+    /// Left click toggles the grid under the icon, right click offers Quit.
+    @objc func statusItemClicked() {
+        if NSApp.currentEvent?.type == .rightMouseUp {
+            switcher.hide()
+            let menu = NSMenu()
+            menu.addItem(withTitle: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q").target = self
+            // Attach the menu just for this click, or every left click would open it too.
+            item.menu = menu
+            item.button?.performClick(nil)
+            item.menu = nil
+        } else if switcher.isVisible {
+            switcher.hide()
+        } else if let anchor = item.button?.window?.frame {
+            switcher.showBelow(anchor, overview(), current: ws.current)
+        }
+    }
+
+    /// App icons of each workspace, one per app, sorted by app name.
+    func overview() -> [[NSImage]] {
+        refresh()
+        return (1...workspaceCount).map { n in
+            Set(ws.windows(in: n).map(\.pid))
+                .compactMap { NSRunningApplication(processIdentifier: $0) }
+                .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
+                .compactMap(\.icon)
+        }
     }
 }
 
