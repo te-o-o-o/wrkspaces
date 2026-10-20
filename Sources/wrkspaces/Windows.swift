@@ -66,20 +66,16 @@ struct WindowInfo {
     let window: AXUIElement
     let app: NSRunningApplication?
     let appName: String
-    let title: String
     let icon: NSImage?
 
     init(_ w: AXUIElement) {
         app = NSRunningApplication(processIdentifier: w.pid)
         window = w
         appName = app?.localizedName ?? "?"
-        title = w.get(kAXTitleAttribute) ?? ""
         icon = app?.icon.map {
             let i = $0.copy() as! NSImage
             i.size = NSSize(width: 16, height: 16)
             return i
         }
     }
-
-    var label: String { title.isEmpty || title == appName ? appName : "\(appName) — \(title.prefix(50))" }
 }

@@ -28,10 +28,7 @@ final class Switcher {
     }
 
     func show(_ overview: [[WindowInfo]], current: Int) {
-        grid.apps = overview.map { windows in
-            var seen = Set<String>()
-            return windows.filter { seen.insert($0.appName).inserted }.compactMap { $0.app?.icon }
-        }
+        grid.apps = overview.map { $0.compactMap { $0.app?.icon } }
         grid.current = current
         grid.needsDisplay = true
         guard !panel.isVisible else { return }

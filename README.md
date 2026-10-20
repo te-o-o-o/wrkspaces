@@ -10,7 +10,7 @@
 - **Follows you**: Cmd-Tab or the Dock onto a window on another workspace takes you there.
 - **Nothing lost**: quitting, Ctrl-C or a crash puts every window back on screen.
 - **No config**: one menu bar item, a little window with eyes and the current workspace number.
-- **See where everything is**: its menu lists each workspace with its windows; click one to go there. Keep `⌃` held after `⌃N` and a grid of the nine workspaces shows up, like Cmd-Tab.
+- **See where everything is**: its menu lists each workspace with its apps; click one to go there. Keep `⌃` held after `⌃N` and a grid of the nine workspaces shows up, like Cmd-Tab.
 
 ## Install
 
