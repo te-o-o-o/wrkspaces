@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import ServiceManagement
 import WrkspacesCore
 
 final class App: NSObject, NSApplicationDelegate {
@@ -105,6 +106,12 @@ final class App: NSObject, NSApplicationDelegate {
         if NSApp.currentEvent?.type == .rightMouseUp {
             switcher.hide()
             let menu = NSMenu()
+            // Login items need a real .app: hidden under `swift run`.
+            if Bundle.main.bundleIdentifier != nil {
+                let login = menu.addItem(withTitle: "Open at Login", action: #selector(toggleOpenAtLogin), keyEquivalent: "")
+                login.target = self
+                login.state = SMAppService.mainApp.status == .enabled ? .on : .off
+            }
             menu.addItem(withTitle: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q").target = self
             // Attach the menu just for this click, or every left click would open it too.
             item.menu = menu
@@ -114,6 +121,15 @@ final class App: NSObject, NSApplicationDelegate {
             switcher.hide()
         } else if let anchor = item.button?.window?.frame {
             switcher.showBelow(anchor, overview(), current: ws.current)
+        }
+    }
+
+    @objc func toggleOpenAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled { try service.unregister() } else { try service.register() }
+        } catch {
+            NSLog("wrkspaces: open at login: \(error)")
         }
     }
 
