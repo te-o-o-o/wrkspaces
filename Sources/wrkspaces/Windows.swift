@@ -60,22 +60,3 @@ var screens: [CGRect] { NSScreen.screens.map(\.frame) }
 func fallbackPosition() -> CGPoint {
     fallbackPosition(primary: NSScreen.screens[0].frame, visible: NSScreen.screens[0].visibleFrame)
 }
-
-/// What the menu and the switcher show about a window.
-struct WindowInfo {
-    let window: AXUIElement
-    let app: NSRunningApplication?
-    let appName: String
-    let icon: NSImage?
-
-    init(_ w: AXUIElement) {
-        app = NSRunningApplication(processIdentifier: w.pid)
-        window = w
-        appName = app?.localizedName ?? "?"
-        icon = app?.icon.map {
-            let i = $0.copy() as! NSImage
-            i.size = NSSize(width: 16, height: 16)
-            return i
-        }
-    }
-}
