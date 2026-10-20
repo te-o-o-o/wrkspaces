@@ -161,9 +161,10 @@ func registerHotKeys(_ handler: @escaping (UInt32) -> Void) {
 
 // MARK: main
 
-guard AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary) else {
-    print("wrkspaces: grant Accessibility access (System Settings > Privacy & Security > Accessibility), then relaunch.")
-    exit(1)
+if !AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary) {
+    print("wrkspaces: waiting for Accessibility access (System Settings > Privacy & Security > Accessibility)…")
+    // From a .app nobody reads this: wait for the permission rather than quit silently.
+    while !AXIsProcessTrusted() { sleep(1) }
 }
 AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.25)
 
