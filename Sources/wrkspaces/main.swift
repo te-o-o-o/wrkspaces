@@ -9,6 +9,7 @@ final class App: NSObject, NSApplicationDelegate {
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
     func applicationDidFinishLaunching(_: Notification) {
+        recoverStrays()
         ws.sync(allWindows())
         buildMenu()
         registerHotKeys { [unowned self] id in
@@ -52,6 +53,13 @@ final class App: NSObject, NSApplicationDelegate {
 
     func unpark(_ w: AXUIElement) {
         w.setPosition(saved.removeValue(forKey: w) ?? fallbackPosition())
+    }
+
+    /// Windows left in the corner by a crash: bring them back before anything else.
+    func recoverStrays() {
+        for w in allWindows() {
+            if let p = w.position, isHidden(p, screens: screens) { w.setPosition(fallbackPosition()) }
+        }
     }
 
     @objc func quit() {
@@ -126,5 +134,15 @@ AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.25)
 let app = App()
 NSApplication.shared.delegate = app
 NSApplication.shared.setActivationPolicy(.accessory)
+
+// Ctrl-C in a terminal must not leave windows stranded in the corner.
+var signalSources: [DispatchSourceSignal] = []
+for sig in [SIGINT, SIGTERM] {
+    signal(sig, SIG_IGN)
+    let src = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+    src.setEventHandler { app.quit() }
+    src.resume()
+    signalSources.append(src)
+}
 
 NSApplication.shared.run()
