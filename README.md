@@ -1,6 +1,6 @@
 <h1 align="center">wrkspaces</h1>
 <p align="center">Virtual desktops for macOS. No tiling, no animation, nothing to learn.</p>
-<p align="center"><sub>v0.1.0 · Swift · macOS · MIT</sub></p>
+<p align="center"><sub>v0.1.1 · Swift · macOS · MIT</sub></p>
 <p align="center"><a href="#features">Features</a> · <a href="#install">Install</a> · <a href="#usage">Usage</a> · <a href="#development">Development</a> · <a href="README.fr.md">Français</a></p>
 
 <p align="center">
