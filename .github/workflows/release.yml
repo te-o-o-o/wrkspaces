@@ -33,7 +33,8 @@ jobs:
           mkdir dmg
           cp -R .build/wrkspaces.app dmg/
           ln -s /Applications dmg/Applications
-          hdiutil create -volname wrkspaces -srcfolder dmg -ov -format UDZO wrkspaces-macos-universal.dmg
+          # The default APFS image with zlib was 766 KB; HFS+ with lzma is 333 KB (opens on macOS 10.15+).
+          hdiutil create -volname wrkspaces -srcfolder dmg -ov -fs HFS+ -format ULMO wrkspaces-macos-universal.dmg
 
       - name: Write the release notes
         run: |
