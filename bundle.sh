@@ -4,7 +4,7 @@
 set -eu
 cd "$(dirname "$0")"
 
-VERSION=0.1.0  # the one version: README badges and the release tag must match it
+VERSION=0.1.1  # the one version: README badges and the release tag must match it
 APP=.build/wrkspaces.app
 
 # Universal: one download for Apple Silicon and Intel Macs.
