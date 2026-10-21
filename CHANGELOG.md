@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- An app icon: the menu bar's little window, in white on teal.
+
 ## 0.1.0 (2026-10-20)
 
 ### Added
