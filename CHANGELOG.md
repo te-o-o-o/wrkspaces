@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- The `.dmg` download is less than half its previous size.
+
 ## 0.1.1 (2026-10-21)
 
 ### Added
