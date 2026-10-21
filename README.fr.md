@@ -41,6 +41,7 @@ Après une recompilation, macOS ne reconnaît plus l'app : retirez-la de la list
 |---|---|
 | `⌃1` … `⌃9` | aller au bureau N |
 | `⌃⇧1` … `⌃⇧9` | envoyer la fenêtre active au bureau N |
+| `⌃` ou `⌃⇧` + pavé `1` … `9` | pareil, depuis le pavé numérique |
 
 <p align="center"><img src="docs/hold.jpg" width="560" alt="La grille affichée tant que ⌃ reste enfoncé, au centre de l'écran : le bureau courant en surbrillance, chaque bureau avec les icônes de ses apps"></p>
 

@@ -172,14 +172,21 @@ func registerHotKeys(_ handler: @escaping (UInt32) -> Void) {
         return noErr
     }, 1, &spec, nil, nil)
 
-    let keys = [kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3, kVK_ANSI_4, kVK_ANSI_5, kVK_ANSI_6, kVK_ANSI_7, kVK_ANSI_8, kVK_ANSI_9]
-    for (i, key) in keys.enumerated() {
-        // id n = switch to n, id 100+n = move the focused window to n
-        for (mods, base) in [(controlKey, 0), (controlKey | shiftKey, 100)] {
-            var ref: EventHotKeyRef?
-            let id = EventHotKeyID(signature: OSType(0x7772_6B73), id: UInt32(base + i + 1))  // 'wrks'
-            if RegisterEventHotKey(UInt32(key), UInt32(mods), id, GetApplicationEventTarget(), 0, &ref) != noErr {
-                print("wrkspaces: shortcut \(base == 0 ? "⌃" : "⌃⇧")\(i + 1) is taken by another app")
+    // The keypad digits have their own key codes: register them too, numbered the same.
+    let rows = [
+        ("", [kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3, kVK_ANSI_4, kVK_ANSI_5, kVK_ANSI_6, kVK_ANSI_7, kVK_ANSI_8, kVK_ANSI_9]),
+        (" (keypad)", [kVK_ANSI_Keypad1, kVK_ANSI_Keypad2, kVK_ANSI_Keypad3, kVK_ANSI_Keypad4, kVK_ANSI_Keypad5,
+                       kVK_ANSI_Keypad6, kVK_ANSI_Keypad7, kVK_ANSI_Keypad8, kVK_ANSI_Keypad9]),
+    ]
+    for (label, keys) in rows {
+        for (i, key) in keys.enumerated() {
+            // id n = switch to n, id 100+n = move the focused window to n
+            for (mods, base) in [(controlKey, 0), (controlKey | shiftKey, 100)] {
+                var ref: EventHotKeyRef?
+                let id = EventHotKeyID(signature: OSType(0x7772_6B73), id: UInt32(base + i + 1))  // 'wrks'
+                if RegisterEventHotKey(UInt32(key), UInt32(mods), id, GetApplicationEventTarget(), 0, &ref) != noErr {
+                    print("wrkspaces: shortcut \(base == 0 ? "⌃" : "⌃⇧")\(i + 1)\(label) is taken by another app")
+                }
             }
         }
     }
