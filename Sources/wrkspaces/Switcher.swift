@@ -108,6 +108,7 @@ final class GridView: NSView {
     static let shortcuts = [
         ("⌃1 … ⌃9", "Go to workspace"),
         ("⌃⇧1 … ⌃⇧9", "Send the window there"),
+        ("Keypad 1 … 9", "Same, with ⌃ or ⌃⇧"),
         ("Hold ⌃", "Show this grid"),
         ("Right-click icon", "Open at login, quit"),
     ]

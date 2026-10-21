@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- The numeric keypad digits work too, with `⌃` and `⌃⇧`.
+
 ## 0.1.2 (2026-10-21)
 
 ### Changed
