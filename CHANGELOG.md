@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Without Accessibility access, the menu bar icon shows `!` and a menu to open the right settings or relaunch.
+
+### Fixed
+
+- Windows of menu bar apps, like Stats' Bluetooth window, now belong to a workspace and show in the grid.
+
 ## 0.1.3 (2026-10-22)
 
 ### Added

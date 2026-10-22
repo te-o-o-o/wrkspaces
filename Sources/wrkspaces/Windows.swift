@@ -46,7 +46,9 @@ extension AXUIElement {
 /// windows are skipped: they live outside our workspaces.
 func allWindows() -> [AXUIElement] {
     NSWorkspace.shared.runningApplications
-        .filter { $0.activationPolicy == .regular }
+        // Menu bar apps (no Dock icon) count too: their real windows, like Stats' Bluetooth one,
+        // belong to a workspace. Their popovers are not standard windows, the filter below drops them.
+        .filter { $0.activationPolicy != .prohibited && $0.processIdentifier != getpid() }
         .flatMap { app -> [AXUIElement] in
             AXUIElementCreateApplication(app.processIdentifier).get(kAXWindowsAttribute) ?? []
         }
