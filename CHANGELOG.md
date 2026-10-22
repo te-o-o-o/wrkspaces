@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Picking a window on another workspace with AltTab, Cmd-Tab or the Dock now brings that window forward, not the last one used there.
+
 ## 0.1.4 (2026-10-23)
 
 ### Added

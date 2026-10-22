@@ -55,19 +55,22 @@ final class App: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [unowned self] _ in
-            if let id = focusedWindow()?.windowID, let n = ws.workspace(of: id), n != ws.current { switchTo(n) }
+            if let id = focusedWindow()?.windowID, let n = ws.workspace(of: id), n != ws.current { switchTo(n, focusing: id) }
         }
         updateStatusItem()
     }
 
-    func switchTo(_ n: Int) {
+    /// `focusing`: the window that brought us here (Cmd-Tab, AltTab, Dock), which must win
+    /// over the one last used on that workspace.
+    func switchTo(_ n: Int, focusing target: CGWindowID? = nil) {
         guard n != ws.current else { return }
         refresh()
-        lastFocused[ws.current] = focusedWindow()?.windowID
+        // When following an activation, the focused window already is the one from workspace n.
+        if let id = focusedWindow()?.windowID, ws.workspace(of: id) == ws.current { lastFocused[ws.current] = id }
         let (hide, show) = ws.switchTo(n)
         hide.forEach(park)
         show.forEach(unpark)
-        focusOrNothing(lastFocused[n].flatMap { show.contains($0) ? $0 : nil } ?? show.first)
+        focusOrNothing(target ?? lastFocused[n].flatMap { show.contains($0) ? $0 : nil } ?? show.first)
         updateStatusItem()
     }
 
