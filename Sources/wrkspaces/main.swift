@@ -11,7 +11,26 @@ final class App: NSObject, NSApplicationDelegate {
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let switcher = Switcher()
 
+    var started = false
+
     func applicationDidFinishLaunching(_: Notification) {
+        setUpStatusItem()
+        if AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary) {
+            start()
+            return
+        }
+        // Without access the icon still shows, with a menu that says what to do. macOS may
+        // only report the grant to a fresh process: poll, and offer Relaunch for when it doesn't.
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [unowned self] timer in
+            guard AXIsProcessTrusted() else { return }
+            timer.invalidate()
+            start()
+        }
+    }
+
+    func start() {
+        started = true
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.25)
         recoverStrays()
         refresh()
         setUpStatusItem()
@@ -38,6 +57,7 @@ final class App: NSObject, NSApplicationDelegate {
         ) { [unowned self] _ in
             if let id = focusedWindow()?.windowID, let n = ws.workspace(of: id), n != ws.current { switchTo(n) }
         }
+        updateStatusItem()
     }
 
     func switchTo(_ n: Int) {
@@ -108,12 +128,24 @@ final class App: NSObject, NSApplicationDelegate {
 
     func updateStatusItem() {
         item.button?.image = mascot(IconStyle.saved, workspace: ws.current)
-        item.button?.title = "\(ws.current)"
+        item.button?.title = started ? "\(ws.current)" : "!"
     }
 
     /// Left click toggles the grid under the icon, right click offers Quit.
     @objc func statusItemClicked() {
-        if NSApp.currentEvent?.type == .rightMouseUp {
+        if !started {
+            let menu = NSMenu()
+            menu.addItem(withTitle: "wrkspaces needs Accessibility access", action: nil, keyEquivalent: "")
+            menu.addItem(withTitle: "Open Accessibility Settings…", action: #selector(openAccessibilitySettings), keyEquivalent: "").target = self
+            if Bundle.main.bundleIdentifier != nil {
+                menu.addItem(withTitle: "Relaunch wrkspaces", action: #selector(relaunch), keyEquivalent: "").target = self
+            }
+            menu.addItem(.separator())
+            menu.addItem(withTitle: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q").target = self
+            item.menu = menu
+            item.button?.performClick(nil)
+            item.menu = nil
+        } else if NSApp.currentEvent?.type == .rightMouseUp {
             switcher.hide()
             let menu = NSMenu()
             // Login items need a real .app: hidden under `swift run`.
@@ -132,6 +164,19 @@ final class App: NSObject, NSApplicationDelegate {
         } else if let anchor = item.button?.window?.frame {
             switcher.showBelow(anchor, overview(), current: ws.current)
         }
+    }
+
+    @objc func openAccessibilitySettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+    }
+
+    /// A new process sees the freshly granted access; this one may never.
+    @objc func relaunch() {
+        let sh = Process()
+        sh.executableURL = URL(fileURLWithPath: "/bin/sh")
+        sh.arguments = ["-c", "sleep 0.5; open \"$0\"", Bundle.main.bundlePath]
+        try? sh.run()
+        NSApp.terminate(nil)
     }
 
     @objc func toggleOpenAtLogin() {
@@ -193,13 +238,6 @@ func registerHotKeys(_ handler: @escaping (UInt32) -> Void) {
 }
 
 // MARK: main
-
-if !AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary) {
-    print("wrkspaces: waiting for Accessibility access (System Settings > Privacy & Security > Accessibility)…")
-    // From a .app nobody reads this: wait for the permission rather than quit silently.
-    while !AXIsProcessTrusted() { sleep(1) }
-}
-AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.25)
 
 let app = App()
 NSApplication.shared.delegate = app
