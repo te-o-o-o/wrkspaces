@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Drag an app in the grid onto another workspace to send its windows there, also in the grid shown while `⌃` is held. Hovering highlights tiles and apps, and the cursor turns into a hand.
+
 ### Changed
 
 - The grid lists each workspace's apps from the last used, and switching brings back the last used window.

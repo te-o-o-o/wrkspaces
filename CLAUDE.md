@@ -26,6 +26,7 @@ This project is outside the global stack table on purpose (macOS-only app, Swift
 - From `swift run`, Accessibility permission belongs to the terminal app, not to the binary.
 - Each `./bundle.sh` changes the ad-hoc signature: the Accessibility grant no longer matches, reset it with `tccutil reset Accessibility io.github.te-o-o-o.wrkspaces`.
 - `NSWorkspace.frontmostApplication` is refreshed by our run loop, so it lags right after an app switch: ask AX (`kAXFocusedApplicationAttribute`) instead. That system-wide query can fail with `kAXErrorCannotComplete` (seen with Obsidian in front): keep the NSWorkspace fallback.
+- The grid panel never becomes key: hover needs a `.activeAlways` tracking area added in `viewDidMoveToWindow`, and the drag cursors need the private `SetsCursorInBackground` connection property (cosmetic).
 - `NSApp.activate()` does work for this accessory app, but System Events' `frontmost` never reports it: check with `lsappinfo front`.
 
 ## Rules

@@ -38,6 +38,11 @@ final class App: NSObject, NSApplicationDelegate {
             switcher.hide()
             switchTo(n)
         }
+        // The grid stays open to show the app in its new place.
+        switcher.grid.onMoveApp = { [unowned self] pid, from, to in
+            moveApp(pid, from: from, to: to)
+            switcher.update(overview(), current: ws.current)
+        }
         // The grid stays open so the new icon can be seen next to the others.
         switcher.grid.onPickIcon = { [unowned self] style in
             IconStyle.saved = style
@@ -79,6 +84,19 @@ final class App: NSObject, NSApplicationDelegate {
         guard let id = focusedWindow()?.windowID, ws.move(id, to: n) else { return }
         park(id)
         focusOrNothing(byRecency(ws.windows(in: ws.current), stacking: stackingOrder()).first)
+    }
+
+    /// Dragged from the grid: every window of that app on workspace `from` goes to `n`.
+    func moveApp(_ pid: pid_t, from: Int, to n: Int) {
+        refresh()
+        let ids = byRecency(ws.windows(in: from).filter { elements[$0]?.pid == pid }, stacking: stackingOrder())
+        for id in ids where ws.move(id, to: n) { park(id) }  // left the visible workspace
+        if n == ws.current {
+            ids.forEach(unpark)
+            focusOrNothing(ids.first)
+        } else if from == ws.current {
+            focusOrNothing(byRecency(ws.windows(in: ws.current), stacking: stackingOrder()).first)
+        }
     }
 
     /// With no window left to focus, keystrokes would still go to the hidden one:
@@ -191,8 +209,8 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// App icons of each workspace, one per app, the last used first.
-    func overview() -> [[NSImage]] {
+    /// Apps of each workspace, one entry per app, the last used first.
+    func overview() -> [[AppIcon]] {
         refresh()
         let stacking = stackingOrder()
         return (1...workspaceCount).map { n in
@@ -200,7 +218,7 @@ final class App: NSObject, NSApplicationDelegate {
             return byRecency(ws.windows(in: n), stacking: stacking)
                 .compactMap { elements[$0]?.pid }
                 .filter { seen.insert($0).inserted }
-                .compactMap { NSRunningApplication(processIdentifier: $0)?.icon }
+                .compactMap { pid in NSRunningApplication(processIdentifier: pid)?.icon.map { AppIcon(pid: pid, icon: $0) } }
         }
     }
 }
