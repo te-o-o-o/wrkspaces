@@ -106,8 +106,8 @@ final class Switcher {
 }
 
 final class GridView: NSView {
-    static let tile = NSSize(width: 112, height: 76)
-    static let appsPerTile = 3  // 3 × 28 px is what a tile holds; more shows as "+N"
+    static let tile = NSSize(width: 112, height: 104)
+    static let appsPerTile = 6  // two rows of 3 × 28 px; more shows as "+N"
     static let gap: CGFloat = 10
     static let pad: CGFloat = 16
     static let iconBox: CGFloat = 32
@@ -240,11 +240,13 @@ final class GridView: NSView {
 
     func tile(at p: NSPoint) -> Int? { apps.indices.first { tileRect($0).contains(p) } }
 
-    /// The k-th app icon of tile i, in one centered row.
+    /// The k-th app icon of tile i: up to 3 apps, one centered row; beyond, a grid of two rows
+    /// of 3 filled from the top-left, so the 4th app sits under the 1st.
     func appRect(_ i: Int, _ k: Int) -> NSRect {
         let r = tileRect(i), side: CGFloat = 28, step = side + 4
-        let x = r.midX - (CGFloat(apps[i].prefix(Self.appsPerTile).count) * step - 4) / 2 + CGFloat(k) * step
-        return NSRect(x: x, y: r.maxY - side - 10, width: side, height: side)
+        let columns = min(3, apps[i].count)
+        let x = r.midX - (CGFloat(columns) * step - 4) / 2 + CGFloat(k % 3) * step
+        return NSRect(x: x, y: r.maxY - 10 - 2 * side - 4 + CGFloat(k / 3) * step, width: side, height: side)
     }
 
     var toggleRect: NSRect { NSRect(x: Self.pad, y: Self.toggleTop, width: bounds.width - Self.pad * 2, height: Self.lineHeight) }
