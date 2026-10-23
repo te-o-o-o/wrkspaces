@@ -5,6 +5,7 @@
 ### Fixed
 
 - Switching workspaces no longer flashes the bare desktop in between.
+- An app sent to another workspace now comes first there, in the grid and when you go to it.
 
 ## 0.1.6 (2026-10-23)
 
