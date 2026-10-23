@@ -2,7 +2,9 @@
 
 ## Decisions
 
-- Windows are keyed by their CGWindowID, not their AX element: Zen (Firefox based) once came back at the fallback position after a ⌃⇧N round trip, which suggests an app can hand out a new element for the same window. Getting the id takes `_AXUIElementGetWindow`, the one private call of the app (no public alternative; AeroSpace, yabai and Rectangle rely on it; no SIP change).
+- Windows are keyed by their CGWindowID, not their AX element: Zen (Firefox based) once came back at the fallback position after a ⌃⇧N round trip, which suggests an app can hand out a new element for the same window. Getting the id takes `_AXUIElementGetWindow`, a private call (no public alternative; AeroSpace, yabai and Rectangle rely on it; no SIP change).
+- The grid's drag cursors take the second private call, `CGSSetConnectionProperty(…, "SetsCursorInBackground")`: macOS only lets the active app set the cursor, and the grid must not take the focus. Cosmetic: if Apple drops it, only the hands are lost.
+- The grid orders apps by the window server's stacking (`CGWindowListCopyWindowInfo`, on-screen only): parked windows stay on screen by a pixel, so they keep their rank, and within a workspace the first is the last used. No permission needed for window numbers.
 - Empty workspace: wrkspaces takes the focus itself (it has no window, so keystrokes go nowhere). Finder was rejected: its windows parked elsewhere would trigger the follow-on-activation.
 - Open at Login through `SMAppService.mainApp`, off by default, only offered when running as a .app.
 - The icon opens the grid rather than a menu: lighter to read. Quit sits on right-click, the usual place for menu bar apps.
@@ -27,5 +29,7 @@
 | macOS 27.0.1 (arm64) | switch, ⌃⇧N, restore on SIGTERM, switcher grid (held ⌃ shows it, quick tap does not), grid from the icon (click a tile, click outside closes, right-click Quit) verified, 1 screen, 7 apps; Cmd-Tab follow seen working by side effect; empty workspace takes focus, quit restores after ⌃⇧N races (3 scripted runs); .app builds and signs, not launched yet |
 
 ## Pitfalls
+
+- The grid panel never becomes key: hover needs a tracking area with `.activeAlways`, added in `viewDidMoveToWindow` (`updateTrackingAreas` was never called for it).
 
 - macOS clamps the parked position vertically (asked for y=981, got 865–889 depending on the window): only x is reliable, hence `isHidden` checks x only.

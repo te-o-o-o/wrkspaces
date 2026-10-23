@@ -1,7 +1,18 @@
 import AppKit
 
+/// One app shown in a grid tile: its icon, and its pid to move it when dragged.
+struct AppIcon {
+    let pid: pid_t
+    let icon: NSImage
+}
+
 /// Grid of the nine workspaces with their apps. Shown while ⌃ stays held after a workspace
 /// shortcut (like Cmd-Tab), or from the menu bar icon. No fade: it appears and goes at once.
+// Private, like _AXUIElementGetWindow: macOS only lets the active app set the cursor, and the
+// grid must not take the focus. If Apple drops it, only the drag cursors are lost.
+@_silgen_name("_CGSDefaultConnection") private func _CGSDefaultConnection() -> Int32
+@_silgen_name("CGSSetConnectionProperty") private func CGSSetConnectionProperty(_: Int32, _: Int32, _: CFString, _: CFTypeRef) -> Int32
+
 final class Switcher {
     private let panel: NSPanel
     let grid = GridView(frame: NSRect(origin: .zero, size: GridView.size))
@@ -18,7 +29,9 @@ final class Switcher {
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.animationBehavior = .none
-        panel.ignoresMouseEvents = true
+        panel.acceptsMouseMovedEvents = true
+        let cid = _CGSDefaultConnection()
+        _ = CGSSetConnectionProperty(cid, cid, "SetsCursorInBackground" as CFString, kCFBooleanTrue)
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         // The HUD material is dark whatever the system theme: keep the text light on it.
         panel.appearance = NSAppearance(named: .darkAqua)
@@ -37,15 +50,14 @@ final class Switcher {
         panel.contentView = blur
     }
 
-    /// Centered, display only, gone when ⌃ is released.
-    func showWhileControlHeld(_ apps: [[NSImage]], current: Int) {
+    /// Centered, gone when ⌃ is released; while ⌃ stays held, click or drag like in `showBelow`.
+    func showWhileControlHeld(_ apps: [[AppIcon]], current: Int) {
         update(apps, current: current)
         guard !panel.isVisible else { return }
         resize(showsIcons: false)
         if let screen = NSScreen.main {
             panel.setFrameOrigin(NSPoint(x: screen.frame.midX - panel.frame.width / 2, y: screen.frame.midY - panel.frame.height / 2))
         }
-        panel.ignoresMouseEvents = true
         panel.orderFrontRegardless()
         // ponytail: polls ⌃ at 20 Hz while visible instead of a global flagsChanged monitor.
         poll = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
@@ -55,7 +67,7 @@ final class Switcher {
 
     /// Under the menu bar icon, with the icon picker below the grid: click a workspace
     /// to go there, an icon to use it, anywhere else to close.
-    func showBelow(_ anchor: NSRect, _ apps: [[NSImage]], current: Int) {
+    func showBelow(_ anchor: NSRect, _ apps: [[AppIcon]], current: Int) {
         update(apps, current: current)
         resize(showsIcons: true)
         var x = anchor.midX - panel.frame.width / 2
@@ -63,7 +75,6 @@ final class Switcher {
             x = min(max(x, screen.visibleFrame.minX + 8), screen.visibleFrame.maxX - panel.frame.width - 8)
         }
         panel.setFrameOrigin(NSPoint(x: x, y: anchor.minY - panel.frame.height - 6))
-        panel.ignoresMouseEvents = false
         panel.orderFrontRegardless()
         // A global monitor only sees clicks in other apps: exactly "outside the grid". The menu
         // bar icon counts as another app here, so skip it: its own click toggles the grid, and
@@ -78,6 +89,7 @@ final class Switcher {
         poll = nil
         if let m = outsideClick { NSEvent.removeMonitor(m) }
         outsideClick = nil
+        grid.leave()
         panel.orderOut(nil)
     }
 
@@ -86,7 +98,7 @@ final class Switcher {
         panel.setContentSize(GridView.size(showsIcons: showsIcons, showsShortcuts: GridView.showsShortcuts))
     }
 
-    private func update(_ apps: [[NSImage]], current: Int) {
+    func update(_ apps: [[AppIcon]], current: Int) {
         grid.apps = apps
         grid.current = current
         grid.needsDisplay = true
@@ -95,6 +107,7 @@ final class Switcher {
 
 final class GridView: NSView {
     static let tile = NSSize(width: 112, height: 76)
+    static let appsPerTile = 3  // 3 × 28 px is what a tile holds; more shows as "+N"
     static let gap: CGFloat = 10
     static let pad: CGFloat = 16
     static let iconBox: CGFloat = 32
@@ -110,6 +123,7 @@ final class GridView: NSView {
         ("⌃⇧1 … ⌃⇧9", "Send the window there"),
         ("Keypad 1 … 9", "Same, with ⌃ or ⌃⇧"),
         ("Hold ⌃", "Show this grid"),
+        ("Drag an app", "Send it to that workspace"),
         ("Right-click icon", "Open at login, quit"),
     ]
 
@@ -126,20 +140,66 @@ final class GridView: NSView {
         set { UserDefaults.standard.set(newValue, forKey: "showShortcuts") }
     }
 
-    var apps: [[NSImage]] = []  // per workspace, one icon per app
+    var apps: [[AppIcon]] = []  // per workspace, the last used app first
     var current = 1
     var showsIcons = false
     var onPick: ((Int) -> Void)?
     var onPickIcon: ((IconStyle) -> Void)?
+    var onMoveApp: ((pid_t, Int, Int) -> Void)?  // pid, from, to
+    private var press: (tile: Int, app: Int?)?  // where the mouse went down in the tiles
+    private var dragAt: NSPoint?  // cursor while an app icon is dragged
+    private var hover: NSPoint?  // cursor over the grid, to highlight what a click would hit
+
+    // activeAlways: the panel never becomes key, so the default tracking would never fire.
+    // inVisibleRect follows the view's size, so one area added once is enough.
+    override func viewDidMoveToWindow() {
+        guard window != nil, trackingAreas.isEmpty else { return }
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                                       owner: self))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        hover = convert(event.locationInWindow, from: nil)
+        updateCursor()
+        needsDisplay = true
+    }
+
+    override func mouseExited(with _: NSEvent) { leave() }
+
+    /// Also when the panel closes under the cursor, or the hand would stay.
+    func leave() {
+        guard hover != nil || dragAt != nil else { return }
+        hover = nil
+        NSCursor.arrow.set()
+        needsDisplay = true
+    }
+
+    /// An open hand over an app icon says it can be dragged, a closed one while it is.
+    private func updateCursor() {
+        if dragAt != nil {
+            NSCursor.closedHand.set()
+        } else if let p = hover, let i = tile(at: p), apps[i].prefix(Self.appsPerTile).indices.contains(where: { appRect(i, $0).contains(p) }) {
+            NSCursor.openHand.set()
+        } else {
+            NSCursor.arrow.set()
+        }
+    }
+
+    private func isHovered(_ r: NSRect) -> Bool { dragAt == nil && hover.map(r.contains) == true }
 
     override var isFlipped: Bool { true }  // workspace 1 top-left, like a numpad read top-down
 
     // The panel never becomes key, so the first click must count.
     override func acceptsFirstMouse(for _: NSEvent?) -> Bool { true }
 
+    // A click on a tile picks it on mouse up; dragging one of its app icons onto another
+    // tile moves that app there instead.
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
-        if let i = apps.indices.first(where: { tileRect($0).contains(p) }) { onPick?(i + 1) }
+        if let i = tile(at: p) {
+            press = (i, apps[i].prefix(Self.appsPerTile).indices.first { appRect(i, $0).contains(p) })
+            return
+        }
         guard showsIcons else { return }
         if let style = IconStyle.allCases.first(where: { iconRect($0).contains(p) }) { onPickIcon?(style) }
         if toggleRect.contains(p) {
@@ -151,6 +211,40 @@ final class GridView: NSView {
             }
             needsDisplay = true
         }
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard press?.app != nil else { return }
+        dragAt = convert(event.locationInWindow, from: nil)
+        updateCursor()
+        needsDisplay = true
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        defer {
+            press = nil
+            dragAt = nil
+            hover = convert(event.locationInWindow, from: nil)
+            updateCursor()
+            needsDisplay = true
+        }
+        guard let press else { return }
+        let target = tile(at: convert(event.locationInWindow, from: nil))
+        // Released on its own tile, even after a jitter, is a click.
+        if let k = press.app, dragAt != nil, let target, target != press.tile {
+            onMoveApp?(apps[press.tile][k].pid, press.tile + 1, target + 1)
+        } else if target == press.tile {
+            onPick?(press.tile + 1)
+        }
+    }
+
+    func tile(at p: NSPoint) -> Int? { apps.indices.first { tileRect($0).contains(p) } }
+
+    /// The k-th app icon of tile i, in one centered row.
+    func appRect(_ i: Int, _ k: Int) -> NSRect {
+        let r = tileRect(i), side: CGFloat = 28, step = side + 4
+        let x = r.midX - (CGFloat(apps[i].prefix(Self.appsPerTile).count) * step - 4) / 2 + CGFloat(k) * step
+        return NSRect(x: x, y: r.maxY - side - 10, width: side, height: side)
     }
 
     var toggleRect: NSRect { NSRect(x: Self.pad, y: Self.toggleTop, width: bounds.width - Self.pad * 2, height: Self.lineHeight) }
@@ -177,7 +271,7 @@ final class GridView: NSView {
             let r = tileRect(i)
             let box = NSBezierPath(roundedRect: r, xRadius: 10, yRadius: 10)
             let isCurrent = i + 1 == current
-            (isCurrent ? NSColor.controlAccentColor.withAlphaComponent(0.3) : NSColor.labelColor.withAlphaComponent(0.06)).setFill()
+            (isCurrent ? NSColor.controlAccentColor.withAlphaComponent(0.3) : NSColor.labelColor.withAlphaComponent(isHovered(r) ? 0.16 : 0.06)).setFill()
             box.fill()
             if isCurrent {
                 NSColor.controlAccentColor.setStroke()
@@ -188,26 +282,36 @@ final class GridView: NSView {
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold),
                 .foregroundColor: NSColor.labelColor,
             ])
-            let shown = icons.prefix(3)  // 3 × 28 px is what a tile holds
-            let side: CGFloat = 28
-            var x = r.midX - (CGFloat(shown.count) * (side + 4) - 4) / 2
-            for icon in shown {
-                icon.draw(in: NSRect(x: x, y: r.maxY - side - 10, width: side, height: side), from: .zero,
-                          operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-                x += side + 4
+            if dragAt != nil, let p = dragAt, tile(at: p) == i, i != press?.tile {
+                NSColor.labelColor.withAlphaComponent(0.6).setStroke()
+                box.lineWidth = 2
+                box.stroke()
             }
-            if icons.count > 3 {
-                ("+\(icons.count - 3)" as NSString).draw(at: NSPoint(x: r.maxX - 26, y: r.minY + 6), withAttributes: [
+            for k in icons.prefix(Self.appsPerTile).indices {
+                if isHovered(appRect(i, k)) {
+                    NSColor.labelColor.withAlphaComponent(0.2).setFill()
+                    NSBezierPath(roundedRect: appRect(i, k).insetBy(dx: -3, dy: -3), xRadius: 7, yRadius: 7).fill()
+                }
+                let dragged = dragAt != nil && press?.tile == i && press?.app == k
+                icons[k].icon.draw(in: appRect(i, k), from: .zero, operation: .sourceOver, fraction: dragged ? 0.3 : 1,
+                                   respectFlipped: true, hints: nil)
+            }
+            if icons.count > Self.appsPerTile {
+                ("+\(icons.count - Self.appsPerTile)" as NSString).draw(at: NSPoint(x: r.maxX - 26, y: r.minY + 6), withAttributes: [
                     .font: NSFont.systemFont(ofSize: 11, weight: .medium), .foregroundColor: NSColor.secondaryLabelColor,
                 ])
             }
+        }
+        if let p = dragAt, let press, let k = press.app {
+            apps[press.tile][k].icon.draw(in: NSRect(x: p.x - 16, y: p.y - 16, width: 32, height: 32), from: .zero,
+                                          operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
         }
         guard showsIcons else { return }
         for style in IconStyle.allCases {
             let r = iconRect(style)
             let box = NSBezierPath(roundedRect: r, xRadius: 8, yRadius: 8)
             let isCurrent = style == IconStyle.saved
-            (isCurrent ? NSColor.controlAccentColor.withAlphaComponent(0.3) : NSColor.labelColor.withAlphaComponent(0.06)).setFill()
+            (isCurrent ? NSColor.controlAccentColor.withAlphaComponent(0.3) : NSColor.labelColor.withAlphaComponent(isHovered(r) ? 0.16 : 0.06)).setFill()
             box.fill()
             if isCurrent {
                 NSColor.controlAccentColor.setStroke()

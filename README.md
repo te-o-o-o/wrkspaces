@@ -14,7 +14,7 @@
 - **Follows you**: Cmd-Tab or the Dock onto a window on another workspace takes you there.
 - **Nothing lost**: quitting, Ctrl-C or a crash puts every window back on screen.
 - **No config**: one menu bar item with the current workspace number and a little icon: a window with eyes, a blob, a flower whose highlighted petal is the workspace, or a ring. Pick it under the grid the icon opens.
-- **See where everything is**: click the icon for a grid of the nine workspaces with their apps, click one to go there. Keep `⌃` held after `⌃N` and the same grid shows up, like Cmd-Tab. A foldable list under the grid recalls every shortcut. Right-click the icon to quit.
+- **See where everything is**: click the icon for a grid of the nine workspaces with their apps, click one to go there. Keep `⌃` held after `⌃N` and the same grid shows up, like Cmd-Tab. Drag an app onto another workspace to send its windows there. A foldable list under the grid recalls every shortcut. Right-click the icon to quit.
 
 ## Install
 
