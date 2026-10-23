@@ -73,8 +73,10 @@ final class App: NSObject, NSApplicationDelegate {
         // When following an activation, the focused window already is the one from workspace n.
         if let id = focusedWindow()?.windowID, ws.workspace(of: id) == ws.current { lastFocused[ws.current] = id }
         let (hide, show) = ws.switchTo(n)
-        hide.forEach(park)
+        // New windows first: they land behind the old ones (a move does not raise), which then
+        // leave and uncover them. The other way round, the bare desktop flashes in between.
         show.forEach(unpark)
+        hide.forEach(park)
         focusOrNothing(target ?? lastFocused[n].flatMap { show.contains($0) ? $0 : nil } ?? byRecency(show, stacking: stackingOrder()).first)
         updateStatusItem()
     }

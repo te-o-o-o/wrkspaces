@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Switching workspaces no longer flashes the bare desktop in between.
+
 ## 0.1.6 (2026-10-23)
 
 ### Added
