@@ -70,7 +70,7 @@ final class App: NSObject, NSApplicationDelegate {
         let (hide, show) = ws.switchTo(n)
         hide.forEach(park)
         show.forEach(unpark)
-        focusOrNothing(target ?? lastFocused[n].flatMap { show.contains($0) ? $0 : nil } ?? show.first)
+        focusOrNothing(target ?? lastFocused[n].flatMap { show.contains($0) ? $0 : nil } ?? byRecency(show, stacking: stackingOrder()).first)
         updateStatusItem()
     }
 
@@ -78,7 +78,7 @@ final class App: NSObject, NSApplicationDelegate {
         refresh()
         guard let id = focusedWindow()?.windowID, ws.move(id, to: n) else { return }
         park(id)
-        focusOrNothing(ws.windows(in: ws.current).first)
+        focusOrNothing(byRecency(ws.windows(in: ws.current), stacking: stackingOrder()).first)
     }
 
     /// With no window left to focus, keystrokes would still go to the hidden one:
@@ -191,14 +191,16 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// App icons of each workspace, one per app, sorted by app name.
+    /// App icons of each workspace, one per app, the last used first.
     func overview() -> [[NSImage]] {
         refresh()
+        let stacking = stackingOrder()
         return (1...workspaceCount).map { n in
-            Set(ws.windows(in: n).compactMap { elements[$0]?.pid })
-                .compactMap { NSRunningApplication(processIdentifier: $0) }
-                .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
-                .compactMap(\.icon)
+            var seen = Set<pid_t>()
+            return byRecency(ws.windows(in: n), stacking: stacking)
+                .compactMap { elements[$0]?.pid }
+                .filter { seen.insert($0).inserted }
+                .compactMap { NSRunningApplication(processIdentifier: $0)?.icon }
         }
     }
 }

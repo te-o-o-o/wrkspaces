@@ -77,6 +77,13 @@ func focus(_ w: AXUIElement) {
 
 var screens: [CGRect] { NSScreen.screens.map(\.frame) }
 
+/// Window IDs front to back. Parked windows are still on screen by a pixel, so they keep
+/// their place: within a workspace, the first one is the last used.
+func stackingOrder() -> [CGWindowID] {
+    let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
+    return (list ?? []).compactMap { $0[kCGWindowNumber as String] as? CGWindowID }
+}
+
 func fallbackPosition() -> CGPoint {
     fallbackPosition(primary: NSScreen.screens[0].frame, visible: NSScreen.screens[0].visibleFrame)
 }
