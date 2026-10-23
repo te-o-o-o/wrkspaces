@@ -26,9 +26,11 @@
 
 | OS | État |
 |---|---|
-| macOS 27.0.1 (arm64) | changement, ⌃⇧N, restauration sur SIGTERM, grille (⌃ maintenu l'affiche, un appui bref non), grille depuis l'icône (clic sur un bureau, clic ailleurs ferme, clic droit Quitter) vérifiés, 1 écran, 7 apps ; suivi Cmd-Tab vu marcher par effet de bord ; focus pris sur bureau vide, restauration à la fermeture après ⌃⇧N enchaînés (3 passes scriptées) ; le .app se construit et se signe, pas encore lancé |
+| macOS 27.0.1 (arm64) | changement, ⌃⇧N, restauration sur SIGTERM, grille (⌃ maintenu l'affiche, un appui bref non), grille depuis l'icône (clic sur un bureau, clic ailleurs ferme, clic droit Quitter) vérifiés, 1 écran, 7 apps ; suivi Cmd-Tab vu marcher par effet de bord ; focus pris sur bureau vide, restauration à la fermeture après ⌃⇧N enchaînés (3 passes scriptées) ; le .app du dmg publié tourne ; suivi AltTab, fenêtres des apps de barre des menus (Stats), raccourcis du pavé (scriptés), glisser-déposer dans la grille, survol et curseur, six apps par case vérifiés à la main ; Open at Login pas encore (issue #1) |
 
 ## Pièges
+
+- Un processus lancé avant l'autorisation Accessibilité peut ne jamais la voir : relancer (le menu `!` le propose). Après un nouveau build, l'ancienne entrée reste cochée mais ne correspond plus : la décocher ne sert à rien, il faut la retirer (− ou `tccutil reset`).
 
 - Le panneau de la grille ne devient jamais la fenêtre active : le survol demande une zone de suivi `.activeAlways`, ajoutée dans `viewDidMoveToWindow` (`updateTrackingAreas` n'était jamais appelé pour elle).
 
