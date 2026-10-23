@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Each workspace in the grid shows up to six apps, on two rows of three.
 - The grid lists each workspace's apps from the last used, and switching brings back the last used window.
 
 ## 0.1.5 (2026-10-23)
