@@ -75,3 +75,8 @@ import WrkspacesCore
 @Test func byRecencyFollowsStackingOrderAndPutsUnknownLast() {
     #expect(byRecency([1, 2, 3, 4], stacking: [3, 9, 1]) == [3, 1, 2, 4])
 }
+
+@Test func byRecencyPutsTheChosenWindowFirst() {
+    #expect(byRecency([1, 2, 3, 4], stacking: [3, 9, 1], first: 4) == [4, 3, 1, 2])
+    #expect(byRecency([1, 2, 3], stacking: [3, 1], first: 7) == [3, 1, 2])  // not there: no change
+}

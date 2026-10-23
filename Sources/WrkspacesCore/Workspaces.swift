@@ -36,8 +36,13 @@ public struct Workspaces<W: Hashable> {
 }
 
 /// `windows` in the order they appear in `order` (the window server's stacking, front to
-/// back, so the last used first); windows missing from it go last.
-public func byRecency<W: Hashable>(_ windows: [W], stacking order: [W]) -> [W] {
+/// back, so the last used first); windows missing from it go last. `first`, when among
+/// them, leads: a window sent to a hidden workspace is parked behind the others, yet it
+/// is the one that workspace should show on top.
+public func byRecency<W: Hashable>(_ windows: [W], stacking order: [W], first: W? = nil) -> [W] {
     let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-    return windows.sorted { rank[$0, default: .max] < rank[$1, default: .max] }
+    return windows.sorted { a, b in
+        if a == first || b == first { return a == first && b != first }
+        return rank[a, default: .max] < rank[b, default: .max]
+    }
 }

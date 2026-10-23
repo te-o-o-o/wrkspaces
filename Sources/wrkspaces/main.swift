@@ -85,6 +85,7 @@ final class App: NSObject, NSApplicationDelegate {
         refresh()
         guard let id = focusedWindow()?.windowID, ws.move(id, to: n) else { return }
         park(id)
+        lastFocused[n] = id  // sent there: it leads that workspace, in the grid and on arrival
         focusOrNothing(byRecency(ws.windows(in: ws.current), stacking: stackingOrder()).first)
     }
 
@@ -93,6 +94,7 @@ final class App: NSObject, NSApplicationDelegate {
         refresh()
         let ids = byRecency(ws.windows(in: from).filter { elements[$0]?.pid == pid }, stacking: stackingOrder())
         for id in ids where ws.move(id, to: n) { park(id) }  // left the visible workspace
+        if n != ws.current, let id = ids.first { lastFocused[n] = id }  // it leads that workspace, in the grid and on arrival
         if n == ws.current {
             ids.forEach(unpark)
             focusOrNothing(ids.first)
@@ -217,7 +219,8 @@ final class App: NSObject, NSApplicationDelegate {
         let stacking = stackingOrder()
         return (1...workspaceCount).map { n in
             var seen = Set<pid_t>()
-            return byRecency(ws.windows(in: n), stacking: stacking)
+            // Another workspace opens on its last focused window: show that app first.
+            return byRecency(ws.windows(in: n), stacking: stacking, first: n == ws.current ? nil : lastFocused[n])
                 .compactMap { elements[$0]?.pid }
                 .filter { seen.insert($0).inserted }
                 .compactMap { pid in NSRunningApplication(processIdentifier: pid)?.icon.map { AppIcon(pid: pid, icon: $0) } }
