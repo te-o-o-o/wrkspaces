@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Switching is about 15 ms faster: macOS's own menu bar agents are no longer scanned for windows.
 - With `⌃` held, the grid follows `⌃N` at once: the new tile lights up before the windows move, without the 0.15 s wait.
 - Switching workspaces no longer flashes the bare desktop in between.
 - An app sent to another workspace now comes first there, in the grid and when you go to it.
