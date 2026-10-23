@@ -71,3 +71,7 @@ import WrkspacesCore
     #expect(results == [false, false])
     #expect(ws.workspace(of: 1) == 1)
 }
+
+@Test func byRecencyFollowsStackingOrderAndPutsUnknownLast() {
+    #expect(byRecency([1, 2, 3, 4], stacking: [3, 9, 1]) == [3, 1, 2, 4])
+}

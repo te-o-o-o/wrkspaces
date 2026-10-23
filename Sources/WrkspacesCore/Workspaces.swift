@@ -34,3 +34,10 @@ public struct Workspaces<W: Hashable> {
         return from == current
     }
 }
+
+/// `windows` in the order they appear in `order` (the window server's stacking, front to
+/// back, so the last used first); windows missing from it go last.
+public func byRecency<W: Hashable>(_ windows: [W], stacking order: [W]) -> [W] {
+    let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+    return windows.sorted { rank[$0, default: .max] < rank[$1, default: .max] }
+}

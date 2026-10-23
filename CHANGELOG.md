@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- The grid lists each workspace's apps from the last used, and switching brings back the last used window.
+
 ## 0.1.5 (2026-10-23)
 
 ### Fixed
