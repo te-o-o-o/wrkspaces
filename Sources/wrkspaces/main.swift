@@ -50,7 +50,14 @@ final class App: NSObject, NSApplicationDelegate {
             switcher.grid.needsDisplay = true
         }
         registerHotKeys { [unowned self] id in
+            // Grid already up (⌃ still held): light the new tile before the windows move.
+            if switcher.isVisible, id < 100 { switcher.highlight(Int(id)) }
             id > 100 ? moveFocused(to: Int(id) - 100) : switchTo(Int(id))
+            if switcher.isVisible {
+                // switchTo just refreshed the windows: no need to read them again.
+                switcher.update(overview(refreshing: false), current: ws.current)
+                return
+            }
             // Like Cmd-Tab: a quick tap shows nothing, keeping ⌃ held shows the grid.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
                 if NSEvent.modifierFlags.contains(.control) { switcher.showWhileControlHeld(overview(), current: ws.current) }
@@ -214,8 +221,8 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     /// Apps of each workspace, one entry per app, the last used first.
-    func overview() -> [[AppIcon]] {
-        refresh()
+    func overview(refreshing: Bool = true) -> [[AppIcon]] {
+        if refreshing { refresh() }
         let stacking = stackingOrder()
         return (1...workspaceCount).map { n in
             var seen = Set<pid_t>()

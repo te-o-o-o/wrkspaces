@@ -98,6 +98,12 @@ final class Switcher {
         panel.setContentSize(GridView.size(showsIcons: showsIcons, showsShortcuts: GridView.showsShortcuts))
     }
 
+    /// Draws now rather than on the next pass, so the new tile lights up before the windows move.
+    func highlight(_ n: Int) {
+        grid.current = n
+        grid.display()
+    }
+
     func update(_ apps: [[AppIcon]], current: Int) {
         grid.apps = apps
         grid.current = current
