@@ -1,6 +1,6 @@
 <h1 align="center">wrkspaces</h1>
 <p align="center">Des bureaux virtuels pour macOS. Pas de tiling, pas d'animation, rien à apprendre.</p>
-<p align="center"><sub>v0.1.5 · Swift · macOS · MIT</sub></p>
+<p align="center"><sub>v0.1.6 · Swift · macOS · MIT</sub></p>
 <p align="center"><a href="#fonctionnalités">Fonctionnalités</a> · <a href="#installation">Installation</a> · <a href="#utilisation">Utilisation</a> · <a href="#développement">Développement</a> · <a href="README.md">English</a></p>
 
 <p align="center">
