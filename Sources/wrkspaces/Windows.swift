@@ -51,9 +51,12 @@ private func isSystemAgent(_ app: NSRunningApplication) -> Bool {
 }
 
 /// Standard, visible windows of every regular app. Minimized and native full-screen
-/// windows are skipped: they live outside our workspaces.
+/// windows are skipped: they live outside our workspaces. So are floating ones (always-on-top
+/// popups like copycopy's): parked, their app saved the corner as their place and reopened there.
 func allWindows() -> [AXUIElement] {
-    NSWorkspace.shared.runningApplications
+    let list = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] ?? []
+    let normal = Set(list.filter { $0[kCGWindowLayer as String] as? Int == 0 }.compactMap { $0[kCGWindowNumber as String] as? CGWindowID })
+    return NSWorkspace.shared.runningApplications
         // Menu bar apps (no Dock icon) count too: their real windows, like Stats' Bluetooth one,
         // belong to a workspace. Their popovers are not standard windows, the filter below drops them.
         .filter { $0.activationPolicy != .prohibited && $0.processIdentifier != getpid() && !isSystemAgent($0) }
@@ -64,6 +67,7 @@ func allWindows() -> [AXUIElement] {
             ($0.get(kAXSubroleAttribute) as String?) == kAXStandardWindowSubrole
                 && ($0.get(kAXMinimizedAttribute) as Bool?) != true
                 && ($0.get("AXFullScreen") as Bool?) != true
+                && $0.windowID.map(normal.contains) == true
         }
 }
 
