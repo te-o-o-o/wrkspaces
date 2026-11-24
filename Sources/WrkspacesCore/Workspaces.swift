@@ -48,7 +48,8 @@ public struct Workspaces<W: Hashable> {
         let moving = Set(windows)
         let kept = arrival.filter { !moving.contains($0) }
         let i = target.flatMap { kept.firstIndex(of: $0) } ?? kept.endIndex
-        arrival = Array(kept[..<i]) + arrival.filter { moving.contains($0) } + kept[i...]
+        // Both slices wrapped: the CI's older Swift will not add an ArraySlice to an Array.
+        arrival = Array(kept[..<i]) + arrival.filter { moving.contains($0) } + Array(kept[i...])
     }
 }
 
