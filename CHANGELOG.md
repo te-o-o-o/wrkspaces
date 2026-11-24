@@ -2,12 +2,21 @@
 
 ## Unreleased
 
+### Added
+
+- `⌃N` again on the workspace already shown steps through its apps in the grid from the first one, like Cmd-Tab: the app lit up comes forward when `⌃` is released.
+- Drag an app onto another app of the same workspace in the grid to reorder them.
+
+### Changed
+
+- Each workspace keeps its apps in a fixed order, the one they arrived in, instead of the last used first.
+
 ### Fixed
 
 - Switching is about 15 ms faster: macOS's own menu bar agents are no longer scanned for windows.
 - With `⌃` held, the grid follows `⌃N` at once: the new tile lights up before the windows move, without the 0.15 s wait.
 - Switching workspaces no longer flashes the bare desktop in between.
-- An app sent to another workspace now comes first there, in the grid and when you go to it.
+- An app sent to another workspace is now the one shown when you go there.
 
 ## 0.1.6 (2026-10-23)
 

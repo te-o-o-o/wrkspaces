@@ -18,6 +18,7 @@ final class Switcher {
     let grid = GridView(frame: NSRect(origin: .zero, size: GridView.size))
     private var poll: Timer?
     private var outsideClick: Any?
+    var onReleaseOnApp: ((pid_t) -> Void)?  // ⌃ released with an app selected
 
     var isVisible: Bool { panel.isVisible }
 
@@ -61,7 +62,10 @@ final class Switcher {
         panel.orderFrontRegardless()
         // ponytail: polls ⌃ at 20 Hz while visible instead of a global flagsChanged monitor.
         poll = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            if !NSEvent.modifierFlags.contains(.control) { self?.hide() }
+            guard let self, !NSEvent.modifierFlags.contains(.control) else { return }
+            let picked = grid.selected
+            hide()
+            if let picked { onReleaseOnApp?(picked) }
         }
     }
 
@@ -90,6 +94,7 @@ final class Switcher {
         if let m = outsideClick { NSEvent.removeMonitor(m) }
         outsideClick = nil
         grid.leave()
+        grid.selected = nil
         panel.orderOut(nil)
     }
 
@@ -126,10 +131,12 @@ final class GridView: NSView {
     static let linesTop = toggleTop + lineHeight + 4
     static let shortcuts = [
         ("⌃1 … ⌃9", "Go to workspace"),
+        ("⌃N again", "Pick one of its apps"),
         ("⌃⇧1 … ⌃⇧9", "Send the window there"),
         ("Keypad 1 … 9", "Same, with ⌃ or ⌃⇧"),
         ("Hold ⌃", "Show this grid"),
         ("Drag an app", "Send it to that workspace"),
+        ("…onto an app", "Reorder them"),
         ("Right-click icon", "Open at login, quit"),
     ]
 
@@ -146,12 +153,14 @@ final class GridView: NSView {
         set { UserDefaults.standard.set(newValue, forKey: "showShortcuts") }
     }
 
-    var apps: [[AppIcon]] = []  // per workspace, the last used app first
+    var apps: [[AppIcon]] = []  // per workspace, in its fixed order
     var current = 1
+    var selected: pid_t?  // app of the current tile picked by ⌃N again, focused when ⌃ is released
     var showsIcons = false
     var onPick: ((Int) -> Void)?
     var onPickIcon: ((IconStyle) -> Void)?
     var onMoveApp: ((pid_t, Int, Int) -> Void)?  // pid, from, to
+    var onReorderApp: ((pid_t, pid_t?, Int) -> Void)?  // pid, the app it now goes before (nil: last), workspace
     private var press: (tile: Int, app: Int?)?  // where the mouse went down in the tiles
     private var dragAt: NSPoint?  // cursor while an app icon is dragged
     private var hover: NSPoint?  // cursor over the grid, to highlight what a click would hit
@@ -235,16 +244,27 @@ final class GridView: NSView {
             needsDisplay = true
         }
         guard let press else { return }
-        let target = tile(at: convert(event.locationInWindow, from: nil))
-        // Released on its own tile, even after a jitter, is a click.
+        let p = convert(event.locationInWindow, from: nil)
+        let target = tile(at: p)
         if let k = press.app, dragAt != nil, let target, target != press.tile {
             onMoveApp?(apps[press.tile][k].pid, press.tile + 1, target + 1)
+        } else if let k = press.app, dragAt != nil, target == press.tile, let t = reorderSlot(at: p) {
+            // It takes the place of the icon it is dropped on: before it going left, after it going right.
+            let row = apps[press.tile]
+            onReorderApp?(row[k].pid, t < k ? row[t].pid : row.indices.contains(t + 1) ? row[t + 1].pid : nil, press.tile + 1)
         } else if target == press.tile {
+            // Released on its own tile, even after a jitter, is a click.
             onPick?(press.tile + 1)
         }
     }
 
     func tile(at p: NSPoint) -> Int? { apps.indices.first { tileRect($0).contains(p) } }
+
+    /// While an app icon is dragged within its own tile: the other icon it is over, if any.
+    private func reorderSlot(at p: NSPoint) -> Int? {
+        guard let press, let k = press.app, tile(at: p) == press.tile else { return nil }
+        return apps[press.tile].prefix(Self.appsPerTile).indices.first { $0 != k && appRect(press.tile, $0).insetBy(dx: -2, dy: -2).contains(p) }
+    }
 
     /// The k-th app icon of tile i: up to 3 apps, one centered row; beyond, a grid of two rows
     /// of 3 filled from the top-left, so the 4th app sits under the 1st.
@@ -296,9 +316,18 @@ final class GridView: NSView {
                 box.stroke()
             }
             for k in icons.prefix(Self.appsPerTile).indices {
-                if isHovered(appRect(i, k)) {
+                if isCurrent, icons[k].pid == selected {
+                    NSColor.controlAccentColor.setFill()
+                    NSBezierPath(roundedRect: appRect(i, k).insetBy(dx: -4, dy: -4), xRadius: 8, yRadius: 8).fill()
+                } else if isHovered(appRect(i, k)) {
                     NSColor.labelColor.withAlphaComponent(0.2).setFill()
                     NSBezierPath(roundedRect: appRect(i, k).insetBy(dx: -3, dy: -3), xRadius: 7, yRadius: 7).fill()
+                }
+                if let p = dragAt, press?.tile == i, reorderSlot(at: p) == k {
+                    NSColor.labelColor.withAlphaComponent(0.6).setStroke()
+                    let ring = NSBezierPath(roundedRect: appRect(i, k).insetBy(dx: -3, dy: -3), xRadius: 7, yRadius: 7)
+                    ring.lineWidth = 2
+                    ring.stroke()
                 }
                 let dragged = dragAt != nil && press?.tile == i && press?.app == k
                 icons[k].icon.draw(in: appRect(i, k), from: .zero, operation: .sourceOver, fraction: dragged ? 0.3 : 1,

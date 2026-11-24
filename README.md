@@ -14,7 +14,7 @@
 - **Follows you**: Cmd-Tab or the Dock onto a window on another workspace takes you there.
 - **Nothing lost**: quitting, Ctrl-C or a crash puts every window back on screen.
 - **No config**: one menu bar item with the current workspace number and a little icon: a window with eyes, a blob, a flower whose highlighted petal is the workspace, or a ring. Pick it under the grid the icon opens.
-- **See where everything is**: click the icon for a grid of the nine workspaces with their apps, click one to go there. Keep `⌃` held after `⌃N` and the same grid shows up, like Cmd-Tab. Drag an app onto another workspace to send its windows there. A foldable list under the grid recalls every shortcut. Right-click the icon to quit.
+- **See where everything is**: click the icon for a grid of the nine workspaces with their apps, click one to go there. Keep `⌃` held after `⌃N` and the same grid shows up, like Cmd-Tab. Drag an app onto another workspace to send its windows there, or onto another app of its own to reorder them. A foldable list under the grid recalls every shortcut. Right-click the icon to quit.
 
 ## Install
 
@@ -39,7 +39,7 @@ After a rebuild, macOS no longer recognises the app: remove it from the Accessib
 
 | Shortcut | Action |
 |---|---|
-| `⌃1` … `⌃9` | go to workspace N |
+| `⌃1` … `⌃9` | go to workspace N; again, with `⌃` held, to pick one of its apps in the grid |
 | `⌃⇧1` … `⌃⇧9` | send the focused window to workspace N |
 | `⌃` or `⌃⇧` + keypad `1` … `9` | same as above, from the numeric keypad |
 

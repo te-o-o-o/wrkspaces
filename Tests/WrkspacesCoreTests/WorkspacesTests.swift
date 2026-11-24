@@ -59,7 +59,7 @@ import WrkspacesCore
     var ws = Workspaces<Int>()
     ws.sync([1, 2, 3])
     _ = ws.move(3, to: 9)
-    #expect(Set(ws.windows(in: 1)) == [1, 2])
+    #expect(ws.windows(in: 1) == [1, 2])
     #expect(ws.windows(in: 9) == [3])
     #expect(ws.windows(in: 5).isEmpty)
 }
@@ -76,7 +76,29 @@ import WrkspacesCore
     #expect(byRecency([1, 2, 3, 4], stacking: [3, 9, 1]) == [3, 1, 2, 4])
 }
 
-@Test func byRecencyPutsTheChosenWindowFirst() {
-    #expect(byRecency([1, 2, 3, 4], stacking: [3, 9, 1], first: 4) == [4, 3, 1, 2])
-    #expect(byRecency([1, 2, 3], stacking: [3, 1], first: 7) == [3, 1, 2])  // not there: no change
+@Test func windowsKeepTheirArrivalOrderAndAMovedOneArrivesLast() {
+    var ws = Workspaces<Int>()
+    ws.sync([3, 1, 2])
+    ws.sync([2, 4, 1, 3])  // listed in another order: no reshuffle, the new one goes last
+    #expect(ws.windows(in: 1) == [3, 1, 2, 4])
+    _ = ws.move(3, to: 2)
+    _ = ws.move(3, to: 1)
+    #expect(ws.windows(in: 1) == [1, 2, 4, 3])
+}
+
+@Test func nextAppFollowsTheOrderAndWrapsAround() {
+    #expect(nextApp(["a", "b", "c"], after: "a") == "b")
+    #expect(nextApp(["a", "b", "c"], after: "c") == "a")
+    #expect(nextApp(["a", "b", "c"], after: "z") == "a")  // gone meanwhile: start at the first
+    #expect(nextApp(["a", "b", "c"], after: nil) == "a")  // new hold: the first
+    #expect(nextApp([String](), after: "a") == nil)
+}
+
+@Test func placeMovesAnAppsWindowsBeforeAnotherOrLast() {
+    var ws = Workspaces<Int>()
+    ws.sync([1, 2, 3, 4])
+    ws.place([4, 2], before: 1)
+    #expect(ws.windows(in: 1) == [2, 4, 1, 3])  // kept in their own order
+    ws.place([2], before: nil)
+    #expect(ws.windows(in: 1) == [4, 1, 3, 2])
 }

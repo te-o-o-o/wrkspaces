@@ -5,19 +5,25 @@ public let workspaceCount = 9
 public struct Workspaces<W: Hashable> {
     public private(set) var current = 1
     private var home: [W: Int] = [:]
+    private var arrival: [W] = []  // every window, in the order it reached its workspace
 
     public init() {}
 
-    /// New windows land on the current workspace; closed ones are forgotten.
+    /// New windows land on the current workspace, after the others; closed ones are forgotten.
     public mutating func sync(_ alive: [W]) {
-        let alive = Set(alive)
-        home = home.filter { alive.contains($0.key) }
-        for w in alive where home[w] == nil { home[w] = current }
+        let set = Set(alive)
+        home = home.filter { set.contains($0.key) }
+        arrival = arrival.filter { set.contains($0) }
+        for w in alive where home[w] == nil {
+            home[w] = current
+            arrival.append(w)
+        }
     }
 
     public func workspace(of w: W) -> Int? { home[w] }
 
-    public func windows(in n: Int) -> [W] { home.filter { $0.value == n }.map(\.key) }
+    /// In arrival order, so a workspace keeps its apps in the same order whatever gets focused.
+    public func windows(in n: Int) -> [W] { arrival.filter { home[$0] == n } }
 
     /// Returns the windows to hide and the ones to show.
     public mutating func switchTo(_ n: Int) -> (hide: [W], show: [W]) {
@@ -28,21 +34,36 @@ public struct Workspaces<W: Hashable> {
     }
 
     /// Returns true when the window leaves the visible workspace and must be hidden.
+    /// It arrives last on its new workspace.
     public mutating func move(_ w: W, to n: Int) -> Bool {
         guard (1...workspaceCount).contains(n), let from = home[w], from != n else { return false }
         home[w] = n
+        arrival.removeAll { $0 == w }
+        arrival.append(w)
         return from == current
+    }
+
+    /// Reorders a workspace: `windows` (one app's) go right before `target`, or last when it is nil.
+    public mutating func place(_ windows: [W], before target: W?) {
+        let moving = Set(windows)
+        let kept = arrival.filter { !moving.contains($0) }
+        let i = target.flatMap { kept.firstIndex(of: $0) } ?? kept.endIndex
+        arrival = Array(kept[..<i]) + arrival.filter { moving.contains($0) } + kept[i...]
     }
 }
 
 /// `windows` in the order they appear in `order` (the window server's stacking, front to
-/// back, so the last used first); windows missing from it go last. `first`, when among
-/// them, leads: a window sent to a hidden workspace is parked behind the others, yet it
-/// is the one that workspace should show on top.
-public func byRecency<W: Hashable>(_ windows: [W], stacking order: [W], first: W? = nil) -> [W] {
+/// back, so the last used first); windows missing from it go last.
+public func byRecency<W: Hashable>(_ windows: [W], stacking order: [W]) -> [W] {
     let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-    return windows.sorted { a, b in
-        if a == first || b == first { return a == first && b != first }
-        return rank[a, default: .max] < rank[b, default: .max]
-    }
+    return windows.sorted { rank[$0, default: .max] < rank[$1, default: .max] }
+}
+
+/// ⌃N on the workspace already shown: the app after the selected one, the first when none is
+/// selected yet, back to the first after the last. `apps` are in the workspace's fixed order,
+/// so three presses land on the third.
+public func nextApp<A: Equatable>(_ apps: [A], after focused: A?) -> A? {
+    guard !apps.isEmpty else { return nil }
+    let i = focused.flatMap { apps.firstIndex(of: $0) } ?? -1
+    return apps[(i + 1) % apps.count]
 }

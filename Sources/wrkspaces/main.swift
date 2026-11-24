@@ -49,10 +49,17 @@ final class App: NSObject, NSApplicationDelegate {
             updateStatusItem()
             switcher.grid.needsDisplay = true
         }
+        switcher.grid.onReorderApp = { [unowned self] pid, before, n in
+            refresh()
+            let mine = ws.windows(in: n)
+            ws.place(mine.filter { elements[$0]?.pid == pid }, before: before.flatMap { b in mine.first { elements[$0]?.pid == b } })
+            switcher.update(overview(refreshing: false), current: ws.current)
+        }
+        switcher.onReleaseOnApp = { [unowned self] pid in focusApp(pid) }
         registerHotKeys { [unowned self] id in
             // Grid already up (⌃ still held): light the new tile before the windows move.
             if switcher.isVisible, id < 100 { switcher.highlight(Int(id)) }
-            id > 100 ? moveFocused(to: Int(id) - 100) : switchTo(Int(id))
+            id > 100 ? moveFocused(to: Int(id) - 100) : Int(id) == ws.current ? cycleApps() : switchTo(Int(id))
             if switcher.isVisible {
                 // switchTo just refreshed the windows: no need to read them again.
                 switcher.update(overview(refreshing: false), current: ws.current)
@@ -88,11 +95,29 @@ final class App: NSObject, NSApplicationDelegate {
         updateStatusItem()
     }
 
+    /// ⌃N on the workspace already shown: select its next app in the grid, like Cmd-Tab.
+    /// Nothing moves until ⌃ is released (`focusApp`).
+    func cycleApps() {
+        refresh()
+        // Each new hold starts from the first app, whatever is focused: the count stays the position.
+        guard let pid = nextApp(apps(in: ws.current), after: switcher.grid.selected) else { return }
+        switcher.grid.selected = pid
+        switcher.showWhileControlHeld(overview(refreshing: false), current: ws.current)
+    }
+
+    /// ⌃ released on a selected app: its last used window on this workspace comes forward.
+    func focusApp(_ pid: pid_t) {
+        refresh()
+        if let id = byRecency(ws.windows(in: ws.current).filter({ elements[$0]?.pid == pid }), stacking: stackingOrder()).first {
+            focusOrNothing(id)
+        }
+    }
+
     func moveFocused(to n: Int) {
         refresh()
         guard let id = focusedWindow()?.windowID, ws.move(id, to: n) else { return }
         park(id)
-        lastFocused[n] = id  // sent there: it leads that workspace, in the grid and on arrival
+        lastFocused[n] = id  // sent there: it is the one shown on arrival
         focusOrNothing(byRecency(ws.windows(in: ws.current), stacking: stackingOrder()).first)
     }
 
@@ -101,7 +126,7 @@ final class App: NSObject, NSApplicationDelegate {
         refresh()
         let ids = byRecency(ws.windows(in: from).filter { elements[$0]?.pid == pid }, stacking: stackingOrder())
         for id in ids where ws.move(id, to: n) { park(id) }  // left the visible workspace
-        if n != ws.current, let id = ids.first { lastFocused[n] = id }  // it leads that workspace, in the grid and on arrival
+        if n != ws.current, let id = ids.first { lastFocused[n] = id }  // it is the one shown on arrival
         if n == ws.current {
             ids.forEach(unpark)
             focusOrNothing(ids.first)
@@ -117,8 +142,10 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     func refresh() {
-        elements = Dictionary(allWindows().compactMap { w in w.windowID.map { ($0, w) } }, uniquingKeysWith: { first, _ in first })
-        ws.sync(Array(elements.keys))
+        let found = allWindows().compactMap { w in w.windowID.map { ($0, w) } }
+        elements = Dictionary(found, uniquingKeysWith: { first, _ in first })
+        // In the order AX lists them, not the dictionary's: it sets the order of new arrivals.
+        ws.sync(found.map(\.0))
         saved = saved.filter { elements[$0.key] != nil }
     }
 
@@ -220,18 +247,18 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Apps of each workspace, one entry per app, the last used first.
+    /// Apps of each workspace, one entry per app, in the workspace's fixed order.
     func overview(refreshing: Bool = true) -> [[AppIcon]] {
         if refreshing { refresh() }
-        let stacking = stackingOrder()
         return (1...workspaceCount).map { n in
-            var seen = Set<pid_t>()
-            // Another workspace opens on its last focused window: show that app first.
-            return byRecency(ws.windows(in: n), stacking: stacking, first: n == ws.current ? nil : lastFocused[n])
-                .compactMap { elements[$0]?.pid }
-                .filter { seen.insert($0).inserted }
-                .compactMap { pid in NSRunningApplication(processIdentifier: pid)?.icon.map { AppIcon(pid: pid, icon: $0) } }
+            apps(in: n).compactMap { pid in NSRunningApplication(processIdentifier: pid)?.icon.map { AppIcon(pid: pid, icon: $0) } }
         }
+    }
+
+    /// Apps of workspace `n`, one pid per app, in the order they arrived there.
+    func apps(in n: Int) -> [pid_t] {
+        var seen = Set<pid_t>()
+        return ws.windows(in: n).compactMap { elements[$0]?.pid }.filter { seen.insert($0).inserted }
     }
 }
 
