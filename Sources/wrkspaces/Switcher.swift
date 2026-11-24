@@ -132,7 +132,7 @@ final class GridView: NSView {
     static let shortcuts = [
         ("⌃1 … ⌃9", "Go to workspace"),
         ("⌃N again", "Pick one of its apps"),
-        ("⌃⇧1 … ⌃⇧9", "Send the window there"),
+        ("⌃⇧1 … ⌃⇧9", "Take the window there"),
         ("Keypad 1 … 9", "Same, with ⌃ or ⌃⇧"),
         ("Hold ⌃", "Show this grid"),
         ("Drag an app", "Send it to that workspace"),

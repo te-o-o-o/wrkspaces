@@ -58,7 +58,7 @@ final class App: NSObject, NSApplicationDelegate {
         switcher.onReleaseOnApp = { [unowned self] pid in focusApp(pid) }
         registerHotKeys { [unowned self] id in
             // Grid already up (⌃ still held): light the new tile before the windows move.
-            if switcher.isVisible, id < 100 { switcher.highlight(Int(id)) }
+            if switcher.isVisible { switcher.highlight(Int(id) % 100) }  // ⌃⇧N follows the window there too
             id > 100 ? moveFocused(to: Int(id) - 100) : Int(id) == ws.current ? cycleApps() : switchTo(Int(id))
             if switcher.isVisible {
                 // switchTo just refreshed the windows: no need to read them again.
@@ -113,12 +113,12 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// ⌃⇧N: the window goes to workspace n and we follow it there. It never gets parked: it
+    /// stays where it is on screen, the rest of n comes around it.
     func moveFocused(to n: Int) {
         refresh()
         guard let id = focusedWindow()?.windowID, ws.move(id, to: n) else { return }
-        park(id)
-        lastFocused[n] = id  // sent there: it is the one shown on arrival
-        focusOrNothing(byRecency(ws.windows(in: ws.current), stacking: stackingOrder()).first)
+        switchTo(n, focusing: id)
     }
 
     /// Dragged from the grid: every window of that app on workspace `from` goes to `n`.
@@ -155,8 +155,15 @@ final class App: NSObject, NSApplicationDelegate {
         w.setPosition(hiddenCorner(screens: screens))
     }
 
+    /// A window with no saved place was never parked (one followed by ⌃⇧N): leave it where it
+    /// is, unless it sits in the corner anyway.
     func unpark(_ id: CGWindowID) {
-        elements[id]?.setPosition(saved.removeValue(forKey: id) ?? fallbackPosition())
+        guard let w = elements[id] else { return }
+        if let p = saved.removeValue(forKey: id) {
+            w.setPosition(p)
+        } else if let p = w.position, isHidden(p, screens: screens) {
+            w.setPosition(fallbackPosition())
+        }
     }
 
     /// Windows left in the corner by a crash: bring them back before anything else.

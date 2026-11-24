@@ -9,6 +9,7 @@
 
 ### Changed
 
+- `⌃⇧N` takes you along with the window: you land on workspace N, the window still in front and where it was on screen.
 - Each workspace keeps its apps in a fixed order, the one they arrived in, instead of the last used first.
 
 ### Fixed

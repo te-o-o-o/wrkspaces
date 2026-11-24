@@ -40,7 +40,7 @@ After a rebuild, macOS no longer recognises the app: remove it from the Accessib
 | Shortcut | Action |
 |---|---|
 | `⌃1` … `⌃9` | go to workspace N; again, with `⌃` held, to pick one of its apps in the grid |
-| `⌃⇧1` … `⌃⇧9` | send the focused window to workspace N |
+| `⌃⇧1` … `⌃⇧9` | take the focused window to workspace N, and go there with it |
 | `⌃` or `⌃⇧` + keypad `1` … `9` | same as above, from the numeric keypad |
 
 <p align="center"><img src="docs/hold.jpg" width="560" alt="The grid shown while ⌃ is held, centered on the screen: the current workspace highlighted, each workspace with the icons of its apps"></p>
