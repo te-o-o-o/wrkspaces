@@ -15,7 +15,7 @@ struct AppIcon {
 
 final class Switcher {
     private let panel: NSPanel
-    let grid = GridView(frame: NSRect(origin: .zero, size: GridView.size))
+    let grid = GridView(frame: NSRect(x: 0, y: 0, width: GridView.width, height: 300))  // height set on show
     private var poll: Timer?
     private var outsideClick: Any?
     var onReleaseOnApp: ((pid_t) -> Void)?  // ⌃ released with an app selected
@@ -100,7 +100,7 @@ final class Switcher {
 
     private func resize(showsIcons: Bool) {
         grid.showsIcons = showsIcons
-        panel.setContentSize(GridView.size(showsIcons: showsIcons, showsShortcuts: GridView.showsShortcuts))
+        panel.setContentSize(grid.size(showsIcons: showsIcons, showsShortcuts: GridView.showsShortcuts))
     }
 
     /// Draws now rather than on the next pass, so the new tile lights up before the windows move.
@@ -117,35 +117,36 @@ final class Switcher {
 }
 
 final class GridView: NSView {
-    static let tile = NSSize(width: 112, height: 104)
-    static let appsPerTile = 6  // two rows of 3 × 28 px; more shows as "+N"
+    static let tile = NSSize(width: 140, height: 104)
+    static let appsPerTile = 8  // two rows of 4 × 28 px; more shows as "+N"
     static let gap: CGFloat = 10
     static let pad: CGFloat = 16
     static let iconBox: CGFloat = 32
     static let lineHeight: CGFloat = 18
-    // Vertical layout, top-down: tiles, then (from the menu bar icon only) icons, the
-    // shortcuts toggle and, when unfolded, the shortcut lines.
-    static let tilesBottom = pad + tile.height * 3 + gap * 2
-    static let iconsTop = tilesBottom + gap * 1.5
-    static let toggleTop = iconsTop + iconBox + 8
-    static let linesTop = toggleTop + lineHeight + 4
-    static let shortcuts = [
-        ("⌃1 … ⌃9", "Go to workspace"),
+    static let width = pad * 2 + tile.width * 3 + gap * 2
+    // Vertical layout, top-down: tiles (3 per row, as many rows as workspaces need), then
+    // (from the menu bar icon only) icons, the shortcuts toggle and, when unfolded, the shortcut lines.
+    var rows: CGFloat { CGFloat(max(1, (apps.count + 2) / 3)) }
+    var tilesBottom: CGFloat { Self.pad + Self.tile.height * rows + Self.gap * (rows - 1) }
+    var iconsTop: CGFloat { tilesBottom + Self.gap * 1.5 }
+    var toggleTop: CGFloat { iconsTop + Self.iconBox + 8 }
+    var linesTop: CGFloat { toggleTop + Self.lineHeight + 4 }
+    var shortcuts: [(String, String)] { [
+        ("⌃1 … ⌃\(apps.count)", "Go to workspace"),
         ("⌃N again", "Pick one of its apps"),
-        ("⌃⇧1 … ⌃⇧9", "Take the window there"),
-        ("Keypad 1 … 9", "Same, with ⌃ or ⌃⇧"),
+        ("⌃⇧1 … ⌃⇧\(apps.count)", "Take the window there"),
+        ("Keypad 1 … \(apps.count)", "Same, with ⌃ or ⌃⇧"),
         ("Hold ⌃", "Show this grid"),
         ("Drag an app", "Send it to that workspace"),
         ("…onto an app", "Reorder them"),
-        ("Right-click icon", "Open at login, quit"),
-    ]
+        ("Right-click icon", "Workspaces, open at login, quit"),
+    ] }
 
-    static let size = size(showsIcons: false, showsShortcuts: false)
-    static func size(showsIcons: Bool, showsShortcuts: Bool) -> NSSize {
+    func size(showsIcons: Bool, showsShortcuts: Bool) -> NSSize {
         let bottom = !showsIcons ? tilesBottom
-            : showsShortcuts ? linesTop + CGFloat(shortcuts.count) * lineHeight
-            : toggleTop + lineHeight
-        return NSSize(width: pad * 2 + tile.width * 3 + gap * 2, height: bottom + pad)
+            : showsShortcuts ? linesTop + CGFloat(shortcuts.count) * Self.lineHeight
+            : toggleTop + Self.lineHeight
+        return NSSize(width: Self.width, height: bottom + Self.pad)
     }
 
     static var showsShortcuts: Bool {
@@ -221,7 +222,7 @@ final class GridView: NSView {
             Self.showsShortcuts.toggle()
             // Grow or shrink downwards: the panel hangs from the menu bar.
             if let w = window {
-                let size = Self.size(showsIcons: true, showsShortcuts: Self.showsShortcuts)
+                let size = size(showsIcons: true, showsShortcuts: Self.showsShortcuts)
                 w.setFrame(NSRect(x: w.frame.minX, y: w.frame.maxY - size.height, width: size.width, height: size.height), display: true)
             }
             needsDisplay = true
@@ -266,22 +267,22 @@ final class GridView: NSView {
         return apps[press.tile].prefix(Self.appsPerTile).indices.first { $0 != k && appRect(press.tile, $0).insetBy(dx: -2, dy: -2).contains(p) }
     }
 
-    /// The k-th app icon of tile i: up to 3 apps, one centered row; beyond, a grid of two rows
-    /// of 3 filled from the top-left, so the 4th app sits under the 1st.
+    /// The k-th app icon of tile i: up to 4 apps, one centered row; beyond, a grid of two rows
+    /// of 4 filled from the top-left, so the 5th app sits under the 1st.
     func appRect(_ i: Int, _ k: Int) -> NSRect {
         let r = tileRect(i), side: CGFloat = 28, step = side + 4
-        let columns = min(3, apps[i].count)
-        let x = r.midX - (CGFloat(columns) * step - 4) / 2 + CGFloat(k % 3) * step
-        return NSRect(x: x, y: r.maxY - 10 - 2 * side - 4 + CGFloat(k / 3) * step, width: side, height: side)
+        let columns = min(4, apps[i].count)
+        let x = r.midX - (CGFloat(columns) * step - 4) / 2 + CGFloat(k % 4) * step
+        return NSRect(x: x, y: r.maxY - 10 - 2 * side - 4 + CGFloat(k / 4) * step, width: side, height: side)
     }
 
-    var toggleRect: NSRect { NSRect(x: Self.pad, y: Self.toggleTop, width: bounds.width - Self.pad * 2, height: Self.lineHeight) }
+    var toggleRect: NSRect { NSRect(x: Self.pad, y: toggleTop, width: bounds.width - Self.pad * 2, height: Self.lineHeight) }
 
     func iconRect(_ style: IconStyle) -> NSRect {
         let (box, gap) = (Self.iconBox, Self.gap)
         let k = CGFloat(IconStyle.allCases.firstIndex(of: style)!)
         let row = CGFloat(IconStyle.allCases.count) * (box + gap) - gap
-        return NSRect(x: bounds.midX - row / 2 + k * (box + gap), y: Self.iconsTop, width: box, height: box)
+        return NSRect(x: bounds.midX - row / 2 + k * (box + gap), y: iconsTop, width: box, height: box)
     }
 
     func tileRect(_ i: Int) -> NSRect {
@@ -356,7 +357,7 @@ final class GridView: NSView {
                 box.stroke()
             }
             // Template images draw black outside the menu bar: tint them like text.
-            let icon = mascot(style, workspace: current)
+            let icon = mascot(style, workspace: current, of: apps.count)
             let tinted = NSImage(size: icon.size, flipped: false) { rr in
                 icon.draw(in: rr)
                 NSColor.labelColor.set()
@@ -370,8 +371,8 @@ final class GridView: NSView {
             at: NSPoint(x: toggleRect.minX + 4, y: toggleRect.minY + 1),
             withAttributes: [.font: small, .foregroundColor: NSColor.secondaryLabelColor])
         guard Self.showsShortcuts else { return }
-        for (k, (keys, action)) in Self.shortcuts.enumerated() {
-            let y = Self.linesTop + CGFloat(k) * Self.lineHeight
+        for (k, (keys, action)) in shortcuts.enumerated() {
+            let y = linesTop + CGFloat(k) * Self.lineHeight
             (keys as NSString).draw(at: NSPoint(x: Self.pad + 18, y: y),
                                     withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold), .foregroundColor: NSColor.labelColor])
             (action as NSString).draw(at: NSPoint(x: Self.pad + 140, y: y),

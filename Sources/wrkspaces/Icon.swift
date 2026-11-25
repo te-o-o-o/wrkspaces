@@ -14,13 +14,13 @@ enum IconStyle: String, CaseIterable {
     }
 }
 
-func mascot(_ style: IconStyle, workspace n: Int) -> NSImage {
+func mascot(_ style: IconStyle, workspace n: Int, of count: Int) -> NSImage {
     let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
         switch style {
         case .window: drawWindow(n)
         case .blob: drawBlob(n)
-        case .flower: drawFlower(n)
-        case .ring: drawRing(n)
+        case .flower: drawFlower(n, of: count)
+        case .ring: drawRing(n, of: count)
         }
         return true
     }
@@ -64,13 +64,13 @@ private func drawBlob(_ n: Int) {
     }
 }
 
-/// Nine petals, one per workspace: 1 at the top, then clockwise. The current one is solid,
+/// One petal per workspace: 1 at the top, then clockwise. The current one is solid,
 /// the others faint (template images only have alpha to play with).
-private func drawFlower(_ n: Int) {
-    for i in 0..<workspaceCount {
+private func drawFlower(_ n: Int, of count: Int) {
+    for i in 0..<count {
         let t = NSAffineTransform()
         t.translateX(by: center.x, yBy: center.y)
-        t.rotate(byDegrees: 90 - CGFloat(i) * 40)
+        t.rotate(byDegrees: 90 - CGFloat(i) * 360 / CGFloat(count))
         let petal = NSBezierPath(ovalIn: NSRect(x: 2, y: -1.9, width: 6.8, height: 3.8))
         petal.transform(using: t as AffineTransform)
         NSColor.black.withAlphaComponent(i + 1 == n ? 1 : 0.3).setFill()
@@ -80,12 +80,13 @@ private func drawFlower(_ n: Int) {
     NSBezierPath(ovalIn: NSRect(x: center.x - 1.7, y: center.y - 1.7, width: 3.4, height: 3.4)).fill()
 }
 
-/// Nine ring segments, the first n of them thick.
-private func drawRing(_ n: Int) {
-    for i in 0..<workspaceCount {
-        let start = 90 - CGFloat(i) * 40 - 3
+/// One ring segment per workspace, the first n of them thick.
+private func drawRing(_ n: Int, of count: Int) {
+    let step = 360 / CGFloat(count)
+    for i in 0..<count {
+        let start = 90 - CGFloat(i) * step - 3
         let p = NSBezierPath()
-        p.appendArc(withCenter: center, radius: 6.5, startAngle: start, endAngle: start - 34, clockwise: true)
+        p.appendArc(withCenter: center, radius: 6.5, startAngle: start, endAngle: start - step + 6, clockwise: true)
         p.lineWidth = i < n ? 3 : 1
         p.lineCapStyle = .round
         p.stroke()

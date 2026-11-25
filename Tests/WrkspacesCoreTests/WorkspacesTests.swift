@@ -102,3 +102,18 @@ import WrkspacesCore
     ws.place([2], before: nil)
     #expect(ws.windows(in: 1) == [4, 1, 3, 2])
 }
+
+@Test func fewerWorkspacesBringTheDroppedWindowsToTheLastOne() {
+    var ws = Workspaces<Int>(count: 9)
+    ws.sync([1, 2, 3, 4])
+    _ = ws.move(2, to: 6)
+    _ = ws.move(3, to: 8)
+    _ = ws.move(4, to: 9)
+    _ = ws.switchTo(8)
+    let show = ws.setCount(6)
+    // We were on 8: we land on 6 with its window, the other dropped ones come along, shown.
+    #expect(ws.count == 6 && ws.current == 6)
+    #expect(ws.windows(in: 6) == [2, 3, 4])
+    #expect(show == [2, 4])  // 3 was already on screen
+    #expect(ws.switchTo(7).show.isEmpty)  // gone
+}

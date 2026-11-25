@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Pick how many workspaces you want, from 2 to 9, in the right-click menu. Going down brings the windows of the dropped workspaces onto the new last one.
+
+### Changed
+
+- Six workspaces by default instead of nine.
+- Going to a workspace always lands on its first app, instead of the last one used there. With `⌃` held it is lit in the grid, so `⌃N` once more goes to the second.
+- The grid shows up to eight apps per workspace instead of six.
+- Picking an app in the held grid with `⌃N` is faster: each press no longer reads every window again.
+
 ## 0.1.7 (2026-11-24)
 
 ### Added

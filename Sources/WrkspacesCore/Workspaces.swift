@@ -1,13 +1,15 @@
-public let workspaceCount = 9
+/// ⌃1 … ⌃9: never more workspaces than digits.
+public let maxWorkspaces = 9
 
 /// Which window lives on which workspace. Knows nothing about AX or AppKit,
 /// so `W` is any window handle (an AXUIElement in the app, an Int in tests).
 public struct Workspaces<W: Hashable> {
     public private(set) var current = 1
+    public private(set) var count: Int
     private var home: [W: Int] = [:]
     private var arrival: [W] = []  // every window, in the order it reached its workspace
 
-    public init() {}
+    public init(count: Int = maxWorkspaces) { self.count = min(max(count, 1), maxWorkspaces) }
 
     /// New windows land on the current workspace, after the others; closed ones are forgotten.
     public mutating func sync(_ alive: [W]) {
@@ -27,7 +29,7 @@ public struct Workspaces<W: Hashable> {
 
     /// Returns the windows to hide and the ones to show.
     public mutating func switchTo(_ n: Int) -> (hide: [W], show: [W]) {
-        guard n != current, (1...workspaceCount).contains(n) else { return ([], []) }
+        guard n != current, (1...count).contains(n) else { return ([], []) }
         let hide = windows(in: current)
         current = n
         return (hide, windows(in: n))
@@ -36,11 +38,25 @@ public struct Workspaces<W: Hashable> {
     /// Returns true when the window leaves the visible workspace and must be hidden.
     /// It arrives last on its new workspace.
     public mutating func move(_ w: W, to n: Int) -> Bool {
-        guard (1...workspaceCount).contains(n), let from = home[w], from != n else { return false }
+        guard (1...count).contains(n), let from = home[w], from != n else { return false }
         home[w] = n
         arrival.removeAll { $0 == w }
         arrival.append(w)
         return from == current
+    }
+
+    /// Fewer workspaces: the windows of the dropped ones go to the new last one, after its own,
+    /// and if we were on a dropped one we land there with them. Returns the windows to show.
+    public mutating func setCount(_ k: Int) -> [W] {
+        let k = min(max(k, 1), maxWorkspaces)
+        let before = Set(windows(in: current))
+        let dropped = arrival.filter { home[$0, default: 0] > k }
+        for w in dropped { home[w] = k }
+        let moving = Set(dropped)
+        arrival = arrival.filter { !moving.contains($0) } + dropped
+        count = k
+        current = min(current, k)
+        return windows(in: current).filter { !before.contains($0) }
     }
 
     /// Reorders a workspace: `windows` (one app's) go right before `target`, or last when it is nil.

@@ -4,10 +4,15 @@ import ServiceManagement
 import WrkspacesCore
 
 final class App: NSObject, NSApplicationDelegate {
-    var ws = Workspaces<CGWindowID>()
+    // Picked in the right-click menu; 6 until then.
+    static var savedCount: Int {
+        get { UserDefaults.standard.object(forKey: "workspaces") as? Int ?? 6 }
+        set { UserDefaults.standard.set(newValue, forKey: "workspaces") }
+    }
+
+    var ws = Workspaces<CGWindowID>(count: App.savedCount)
     var elements: [CGWindowID: AXUIElement] = [:]  // latest AX element of each window
     var saved: [CGWindowID: CGPoint] = [:]  // real position of each hidden window
-    var lastFocused: [Int: CGWindowID] = [:]
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let switcher = Switcher()
 
@@ -57,9 +62,20 @@ final class App: NSObject, NSApplicationDelegate {
         }
         switcher.onReleaseOnApp = { [unowned self] pid in focusApp(pid) }
         registerHotKeys { [unowned self] id in
+            // All nine digits stay registered: those past the workspace count do nothing, so
+            // changing the count needs no re-registering.
+            guard Int(id) % 100 <= ws.count else { return }
+            // ⌃N on the workspace shown: only the selection moves, cycleApps draws it.
+            if id < 100, Int(id) == ws.current { return cycleApps() }
             // Grid already up (⌃ still held): light the new tile before the windows move.
             if switcher.isVisible { switcher.highlight(Int(id) % 100) }  // ⌃⇧N follows the window there too
-            id > 100 ? moveFocused(to: Int(id) - 100) : Int(id) == ws.current ? cycleApps() : switchTo(Int(id))
+            if id > 100 {
+                moveFocused(to: Int(id) - 100)
+            } else {
+                switchTo(Int(id))
+                // The first app is lit, as it is the one in front: ⌃N once more goes to the second.
+                switcher.grid.selected = apps(in: ws.current).first
+            }
             if switcher.isVisible {
                 // switchTo just refreshed the windows: no need to read them again.
                 switcher.update(overview(refreshing: false), current: ws.current)
@@ -67,7 +83,12 @@ final class App: NSObject, NSApplicationDelegate {
             }
             // Like Cmd-Tab: a quick tap shows nothing, keeping ⌃ held shows the grid.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
-                if NSEvent.modifierFlags.contains(.control) { switcher.showWhileControlHeld(overview(), current: ws.current) }
+                // switchTo read the windows 0.15 s ago: no need to read them again.
+                if NSEvent.modifierFlags.contains(.control) {
+                    switcher.showWhileControlHeld(overview(refreshing: false), current: ws.current)
+                } else if !switcher.isVisible {
+                    switcher.grid.selected = nil  // a quick tap: the next hold starts from the first app again
+                }
             }
         }
         // Cmd-Tab or a Dock click onto a window parked elsewhere: follow it.
@@ -79,25 +100,32 @@ final class App: NSObject, NSApplicationDelegate {
         updateStatusItem()
     }
 
-    /// `focusing`: the window that brought us here (Cmd-Tab, AltTab, Dock), which must win
-    /// over the one last used on that workspace.
+    /// Lands on the workspace's first app, on its last used window. `focusing`: the window that
+    /// brought us here (Cmd-Tab, AltTab, Dock, ⌃⇧N), which wins over it.
     func switchTo(_ n: Int, focusing target: CGWindowID? = nil) {
         guard n != ws.current else { return }
         refresh()
-        // When following an activation, the focused window already is the one from workspace n.
-        if let id = focusedWindow()?.windowID, ws.workspace(of: id) == ws.current { lastFocused[ws.current] = id }
         let (hide, show) = ws.switchTo(n)
         // New windows first: they land behind the old ones (a move does not raise), which then
         // leave and uncover them. The other way round, the bare desktop flashes in between.
         show.forEach(unpark)
         hide.forEach(park)
-        focusOrNothing(target ?? lastFocused[n].flatMap { show.contains($0) ? $0 : nil } ?? byRecency(show, stacking: stackingOrder()).first)
+        let first = show.first.flatMap { elements[$0]?.pid }  // `show` is in the workspace's order
+        focusOrNothing(target ?? byRecency(show.filter { elements[$0]?.pid == first }, stacking: stackingOrder()).first)
         updateStatusItem()
     }
 
     /// ⌃N on the workspace already shown: select its next app in the grid, like Cmd-Tab.
     /// Nothing moves until ⌃ is released (`focusApp`).
     func cycleApps() {
+        // Mid-hold, step through the apps the grid already shows: reading every window again
+        // through AX is what made each press lag.
+        if switcher.isVisible {
+            guard let pid = nextApp(switcher.grid.apps[ws.current - 1].map(\.pid), after: switcher.grid.selected) else { return }
+            switcher.grid.selected = pid
+            switcher.grid.display()
+            return
+        }
         refresh()
         // Each new hold starts from the first app, whatever is focused: the count stays the position.
         guard let pid = nextApp(apps(in: ws.current), after: switcher.grid.selected) else { return }
@@ -126,7 +154,6 @@ final class App: NSObject, NSApplicationDelegate {
         refresh()
         let ids = byRecency(ws.windows(in: from).filter { elements[$0]?.pid == pid }, stacking: stackingOrder())
         for id in ids where ws.move(id, to: n) { park(id) }  // left the visible workspace
-        if n != ws.current, let id = ids.first { lastFocused[n] = id }  // it is the one shown on arrival
         if n == ws.current {
             ids.forEach(unpark)
             focusOrNothing(ids.first)
@@ -193,7 +220,7 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     func updateStatusItem() {
-        item.button?.image = mascot(IconStyle.saved, workspace: ws.current)
+        item.button?.image = mascot(IconStyle.saved, workspace: ws.current, of: ws.count)
         item.button?.title = started ? "\(ws.current)" : "!"
     }
 
@@ -220,6 +247,15 @@ final class App: NSObject, NSApplicationDelegate {
                 login.target = self
                 login.state = SMAppService.mainApp.status == .enabled ? .on : .off
             }
+            let count = NSMenu()
+            for k in 2...maxWorkspaces {
+                let entry = count.addItem(withTitle: "\(k)", action: #selector(setWorkspaceCount), keyEquivalent: "")
+                entry.target = self
+                entry.tag = k
+                entry.state = k == ws.count ? .on : .off
+            }
+            menu.addItem(withTitle: "Workspaces", action: nil, keyEquivalent: "").submenu = count
+            menu.addItem(.separator())
             menu.addItem(withTitle: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q").target = self
             // Attach the menu just for this click, or every left click would open it too.
             item.menu = menu
@@ -245,6 +281,14 @@ final class App: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 
+    /// Fewer workspaces bring the windows of the dropped ones onto the new last one.
+    @objc func setWorkspaceCount(_ sender: NSMenuItem) {
+        refresh()
+        ws.setCount(sender.tag).forEach(unpark)
+        App.savedCount = ws.count
+        updateStatusItem()
+    }
+
     @objc func toggleOpenAtLogin() {
         let service = SMAppService.mainApp
         do {
@@ -257,7 +301,7 @@ final class App: NSObject, NSApplicationDelegate {
     /// Apps of each workspace, one entry per app, in the workspace's fixed order.
     func overview(refreshing: Bool = true) -> [[AppIcon]] {
         if refreshing { refresh() }
-        return (1...workspaceCount).map { n in
+        return (1...ws.count).map { n in
             apps(in: n).compactMap { pid in NSRunningApplication(processIdentifier: pid)?.icon.map { AppIcon(pid: pid, icon: $0) } }
         }
     }
