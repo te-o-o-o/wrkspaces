@@ -27,7 +27,7 @@ jobs:
       # Re-signs the ad-hoc build with the one release identity: every version
       # then has the same designated requirement, so macOS keeps the
       # Accessibility grant across updates. doctor fails the release on a bad app.
-      - uses: te-o-o-o/macseal-builder@v0.1.0
+      - uses: te-o-o-o/macseal-builder@v0.1.1
         with:
           app: .build/wrkspaces.app
           p12: ${{ secrets.MACOS_CERT_P12 }}
@@ -56,7 +56,7 @@ jobs:
 
           Download `wrkspaces-macos-universal.dmg`, open it and drag `wrkspaces.app` onto Applications. The `.zip` holds the same app.
 
-          The app is not signed with an Apple Developer ID, so macOS blocks it on first launch. Either right-click it and pick **Open**, or run once:
+          The app is not signed with an Apple Developer ID, so macOS blocks it on first launch and only offers **Done** or **Move to Trash**: pick **Done**, then **Open Anyway** in System Settings → Privacy & Security. Or run once:
 
           ```sh
           xattr -d com.apple.quarantine /Applications/wrkspaces.app
