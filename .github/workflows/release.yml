@@ -24,6 +24,15 @@ jobs:
       - run: swift test
       - run: ./bundle.sh
 
+      # Re-signs the ad-hoc build with the one release identity: every version
+      # then has the same designated requirement, so macOS keeps the
+      # Accessibility grant across updates. doctor fails the release on a bad app.
+      - uses: te-o-o-o/macseal-builder@v0.1.0
+        with:
+          app: .build/wrkspaces.app
+          p12: ${{ secrets.MACOS_CERT_P12 }}
+          password: ${{ secrets.MACOS_CERT_PASSWORD }}
+
       - name: Zip the app
         run: ditto -c -k --norsrc --noextattr --keepParent .build/wrkspaces.app wrkspaces-macos-universal.zip
 
@@ -53,7 +62,7 @@ jobs:
           xattr -d com.apple.quarantine /Applications/wrkspaces.app
           ```
 
-          Then grant Accessibility access when asked. After an update, remove wrkspaces from the Accessibility list and grant it again: macOS treats each build as a new app.
+          Then grant Accessibility access when asked. Updates keep it: every release is signed with the same key. Coming from 0.1.9 or earlier, remove wrkspaces from the Accessibility list and grant it one last time.
           NOTES
 
       - name: Publish
