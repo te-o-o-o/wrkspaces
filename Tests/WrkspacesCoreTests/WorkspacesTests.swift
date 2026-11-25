@@ -94,13 +94,20 @@ import WrkspacesCore
     #expect(nextApp([String](), after: "a") == nil)
 }
 
-@Test func placeMovesAnAppsWindowsBeforeAnotherOrLast() {
-    var ws = Workspaces<Int>()
-    ws.sync([1, 2, 3, 4])
-    ws.place([4, 2], before: 1)
-    #expect(ws.windows(in: 1) == [2, 4, 1, 3])  // kept in their own order
-    ws.place([2], before: nil)
-    #expect(ws.windows(in: 1) == [4, 1, 3, 2])
+@Test func appsKeepTheirPlaceWhileTheirWindowsComeAndGo() {
+    var order = AppOrder<String>()
+    #expect(order.apps(in: 2, present: ["term", "web", "mail"]) == ["term", "web", "mail"])
+    order.place("mail", before: "term", in: 2)
+    #expect(order.apps(in: 2, present: ["term", "web", "mail"]) == ["mail", "term", "web"])
+    // mail's only window closed for a moment (a tab, a slow AX read), then back: same place.
+    #expect(order.apps(in: 2, present: ["term", "web"]) == ["term", "web"])
+    #expect(order.apps(in: 2, present: ["web", "term", "mail", "chat"]) == ["mail", "term", "web", "chat"])
+    order.place("term", before: nil, in: 2)
+    #expect(order.apps(in: 2, present: ["term", "web", "mail", "chat"]) == ["mail", "web", "chat", "term"])
+    // mail quit: when it comes back it goes last.
+    order.keep(only: ["term", "web", "chat"])
+    #expect(order.apps(in: 2, present: ["mail", "term", "web", "chat"]) == ["web", "chat", "term", "mail"])
+    #expect(order.apps(in: 1, present: ["web"]) == ["web"])  // each workspace has its own order
 }
 
 @Test func fewerWorkspacesBringTheDroppedWindowsToTheLastOne() {

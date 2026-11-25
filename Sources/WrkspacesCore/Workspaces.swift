@@ -59,13 +59,36 @@ public struct Workspaces<W: Hashable> {
         return windows(in: current).filter { !before.contains($0) }
     }
 
-    /// Reorders a workspace: `windows` (one app's) go right before `target`, or last when it is nil.
-    public mutating func place(_ windows: [W], before target: W?) {
-        let moving = Set(windows)
-        let kept = arrival.filter { !moving.contains($0) }
-        let i = target.flatMap { kept.firstIndex(of: $0) } ?? kept.endIndex
-        // Both slices wrapped: the CI's older Swift will not add an ArraySlice to an Array.
-        arrival = Array(kept[..<i]) + arrival.filter { moving.contains($0) } + Array(kept[i...])
+}
+
+/// The order of the apps on each workspace, kept apart from their windows: windows come and go
+/// (a tab closed and reopened, a window missed by one slow AX read), the app keeps its place.
+/// It only forgets an app once it quits.
+public struct AppOrder<A: Hashable> {
+    private var order: [Int: [A]] = [:]
+
+    public init() {}
+
+    /// `present`: the apps with a window on workspace n. Known ones keep their place, new ones
+    /// go last, in the order given.
+    public mutating func apps(in n: Int, present: [A]) -> [A] {
+        var list = order[n, default: []]
+        for a in present where !list.contains(a) { list.append(a) }
+        order[n] = list
+        let here = Set(present)
+        return list.filter(here.contains)
+    }
+
+    /// Dragged in the grid: `a` goes right before `b`, or last when it is nil.
+    public mutating func place(_ a: A, before b: A?, in n: Int) {
+        var list = order[n, default: []].filter { $0 != a }
+        list.insert(a, at: b.flatMap { list.firstIndex(of: $0) } ?? list.endIndex)
+        order[n] = list
+    }
+
+    /// Apps that quit lose their places.
+    public mutating func keep(only running: Set<A>) {
+        order = order.mapValues { $0.filter(running.contains) }
     }
 }
 

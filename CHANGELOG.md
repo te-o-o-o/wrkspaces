@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- An app keeps its place in a workspace's order while it runs: a tab closed and reopened, or a window missed for a moment, no longer sends it to the end.
+
 ## 0.1.8 (2026-11-25)
 
 ### Added

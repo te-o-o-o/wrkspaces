@@ -11,6 +11,7 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     var ws = Workspaces<CGWindowID>(count: App.savedCount)
+    var appOrder = AppOrder<pid_t>()  // apps per workspace, in the order the grid shows
     var elements: [CGWindowID: AXUIElement] = [:]  // latest AX element of each window
     var saved: [CGWindowID: CGPoint] = [:]  // real position of each hidden window
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -55,9 +56,7 @@ final class App: NSObject, NSApplicationDelegate {
             switcher.grid.needsDisplay = true
         }
         switcher.grid.onReorderApp = { [unowned self] pid, before, n in
-            refresh()
-            let mine = ws.windows(in: n)
-            ws.place(mine.filter { elements[$0]?.pid == pid }, before: before.flatMap { b in mine.first { elements[$0]?.pid == b } })
+            appOrder.place(pid, before: before, in: n)
             switcher.update(overview(refreshing: false), current: ws.current)
         }
         switcher.onReleaseOnApp = { [unowned self] pid in focusApp(pid) }
@@ -110,7 +109,7 @@ final class App: NSObject, NSApplicationDelegate {
         // leave and uncover them. The other way round, the bare desktop flashes in between.
         show.forEach(unpark)
         hide.forEach(park)
-        let first = show.first.flatMap { elements[$0]?.pid }  // `show` is in the workspace's order
+        let first = apps(in: n).first  // the one in 1st place in the grid
         focusOrNothing(target ?? byRecency(show.filter { elements[$0]?.pid == first }, stacking: stackingOrder()).first)
         updateStatusItem()
     }
@@ -174,6 +173,7 @@ final class App: NSObject, NSApplicationDelegate {
         // In the order AX lists them, not the dictionary's: it sets the order of new arrivals.
         ws.sync(found.map(\.0))
         saved = saved.filter { elements[$0.key] != nil }
+        appOrder.keep(only: Set(NSWorkspace.shared.runningApplications.map(\.processIdentifier)))
     }
 
     func park(_ id: CGWindowID) {
@@ -309,7 +309,7 @@ final class App: NSObject, NSApplicationDelegate {
     /// Apps of workspace `n`, one pid per app, in the order they arrived there.
     func apps(in n: Int) -> [pid_t] {
         var seen = Set<pid_t>()
-        return ws.windows(in: n).compactMap { elements[$0]?.pid }.filter { seen.insert($0).inserted }
+        return appOrder.apps(in: n, present: ws.windows(in: n).compactMap { elements[$0]?.pid }.filter { seen.insert($0).inserted })
     }
 }
 
