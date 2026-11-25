@@ -16,6 +16,8 @@
 - `RegisterEventHotKey` (Carbon) pour les raccourcis : aucune permission en plus, contrairement à un CGEvent tap.
 - Délai AX réduit à 0,25 s pour qu'une app bloquée ne fige pas un changement de bureau.
 
+- Mises à jour : un clic dans le menu du clic droit, pas de Sparkle. La clé des releases (macseal-builder) fait la confiance : le zip doit satisfaire l'exigence désignée de l'app installée (`codesign --verify -R`). Téléchargé par `URLSession` et décompressé par `ditto`, il n'a pas de quarantaine, donc pas de boîte Gatekeeper (vérifié à la main avec curl + ditto, 0.1.9 → 0.1.10, macOS 27.2.1). Désactivé pour les builds ad hoc : leur exigence est un cdhash qu'aucune release ne satisfait. Un `sh` détaché échange les bundles après `quit()`, en gardant l'ancien tant que la copie n'a pas réussi.
+
 ## Pas encore géré
 
 - Plusieurs écrans (les fenêtres sont garées au-delà de tous les écrans, mais les bureaux sont globaux).

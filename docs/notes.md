@@ -16,6 +16,8 @@
 - Carbon `RegisterEventHotKey` for hotkeys: no extra permission, unlike a CGEvent tap.
 - AX messaging timeout lowered to 0.25 s so a hung app cannot freeze a switch.
 
+- Updates: a click in the right-click menu, no Sparkle. The release key (macseal-builder) is the trust: the zip must satisfy the installed app's designated requirement (`codesign --verify -R`). Downloaded by `URLSession` and unpacked by `ditto`, it carries no quarantine, so no Gatekeeper dialog (checked by hand with curl + ditto, 0.1.9 → 0.1.10, macOS 27.2.1). Off for ad-hoc builds: their requirement is a cdhash no release satisfies. A detached `sh` swaps the bundles after `quit()`, keeping the old one until the copy succeeds.
+
 ## Not handled yet
 
 - Multiple screens (windows are parked past all screens, but workspaces are global).

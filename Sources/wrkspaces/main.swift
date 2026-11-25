@@ -16,6 +16,7 @@ final class App: NSObject, NSApplicationDelegate {
     var saved: [CGWindowID: CGPoint] = [:]  // real position of each hidden window
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let switcher = Switcher()
+    let updater = Updater()
 
     var started = false
 
@@ -97,6 +98,7 @@ final class App: NSObject, NSApplicationDelegate {
             if let id = focusedWindow()?.windowID, let n = ws.workspace(of: id), n != ws.current { switchTo(n, focusing: id) }
         }
         updateStatusItem()
+        updater.start()
     }
 
     /// Lands on the workspace's first app, on its last used window. `focusing`: the window that
@@ -255,6 +257,12 @@ final class App: NSObject, NSApplicationDelegate {
                 entry.state = k == ws.count ? .on : .off
             }
             menu.addItem(withTitle: "Workspaces", action: nil, keyEquivalent: "").submenu = count
+            if let r = updater.available {
+                let title = updater.installing ? "Updating to \(r.version)…"
+                    : updater.canReplace ? "Update to \(r.version)" : "Move wrkspaces to Applications to update"
+                let ready = updater.canReplace && !updater.installing
+                menu.addItem(withTitle: title, action: ready ? #selector(update) : nil, keyEquivalent: "").target = self
+            }
             menu.addItem(.separator())
             menu.addItem(withTitle: "Quit wrkspaces", action: #selector(quit), keyEquivalent: "q").target = self
             // Attach the menu just for this click, or every left click would open it too.
@@ -279,6 +287,10 @@ final class App: NSObject, NSApplicationDelegate {
         sh.arguments = ["-c", "sleep 0.5; open \"$0\"", Bundle.main.bundlePath]
         try? sh.run()
         NSApp.terminate(nil)
+    }
+
+    @objc func update() {
+        updater.install { [unowned self] in quit() }
     }
 
     /// Fewer workspaces bring the windows of the dropped ones onto the new last one.

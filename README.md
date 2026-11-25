@@ -49,6 +49,8 @@ If macOS's own "Switch to Desktop N" shortcuts are on, turn them off: System Set
 
 **Not yet**: one set of workspaces for all screens, no per-screen workspaces.
 
+**Updates**: when a new version is out, the right-click menu offers **Update to X.Y.Z**. One click downloads it, checks it is signed with the same key, and relaunches it: no Gatekeeper dialog, Accessibility access kept. A copy built with `./bundle.sh` never updates itself.
+
 ## Development
 
 ```sh
