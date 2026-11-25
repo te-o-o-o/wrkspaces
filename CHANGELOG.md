@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.10 (unreleased)
+
+### Changed
+
+- Releases are signed with one stable key: updating no longer asks for Accessibility access again. Coming from 0.1.9 or earlier, grant it one last time.
+
 ## 0.1.9 (2026-11-25)
 
 ### Fixed

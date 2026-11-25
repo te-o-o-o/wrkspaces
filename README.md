@@ -33,7 +33,7 @@ open /Applications/wrkspaces.app
 
 On first launch macOS asks for Accessibility access: grant it and the app starts on its own. Right-click the icon and pick **Open at Login** to start it with your session.
 
-After a rebuild, macOS no longer recognises the app: remove it from the Accessibility list (or run `tccutil reset Accessibility io.github.te-o-o-o.wrkspaces`) and grant it again.
+Releases are all signed with the same key, so an update keeps the Accessibility grant. Coming from 0.1.9 or earlier, or after building it yourself (`./bundle.sh` signs ad hoc), macOS no longer recognises the app: remove it from the Accessibility list (or run `tccutil reset Accessibility io.github.te-o-o-o.wrkspaces`) and grant it again.
 
 ## Usage
 
