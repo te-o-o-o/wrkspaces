@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Windows go back to their workspace, and apps to their place in the grid, after wrkspaces or the app restarts. Launching an app whose window lives on another workspace takes you there.
+
 ## 0.2.1 (2026-11-26)
 
 ### Changed

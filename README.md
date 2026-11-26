@@ -13,6 +13,7 @@
 - **Shortcuts you already know**: the same ones as macOS's own Spaces.
 - **Follows you**: Cmd-Tab or the Dock onto a window on another workspace takes you there.
 - **Nothing lost**: quitting, Ctrl-C or a crash puts every window back on screen.
+- **Your setup survives relaunches**: each window goes back to its workspace, and each app to its place in the grid, after wrkspaces or the app restarts, even a browser with one window on 1 and another on 3. Launching an app whose window lives elsewhere takes you there.
 - **Almost no config**: one menu bar item with the current workspace number and a little icon: a window with eyes, a blob, a flower whose highlighted petal is the workspace, or a ring. Pick it under the grid the icon opens.
 - **See where everything is**: click the icon for a grid of the workspaces with their apps (up to eight per workspace), click one to go there. Keep `⌃` held after `⌃N` and the same grid shows up, like Cmd-Tab. Drag an app onto another workspace to send its windows there, or onto another app of its own to reorder them. A foldable list under the grid recalls every shortcut. Right-click the icon to pick how many workspaces, or to quit.
 

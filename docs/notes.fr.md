@@ -16,6 +16,7 @@
 - `RegisterEventHotKey` (Carbon) pour les raccourcis : aucune permission en plus, contrairement à un CGEvent tap.
 - Délai AX réduit à 0,25 s pour qu'une app bloquée ne fige pas un changement de bureau.
 
+- Les places survivent aux relances. Les identifiants de fenêtre changent quand une app redémarre : une fenêtre est donc reconnue par son identifiant (seul wrkspaces a redémarré), sinon, pendant les 60 premières secondes de l'app, par son titre, puis son cadre (à 2 px près), puis n'importe quel souvenir de l'app si elle n'a pas encore d'autre fenêtre. Chaque souvenir ne sert qu'une fois. Passé ces 60 s, une fenêtre ⌘N n'est jamais envoyée ailleurs, même avec un titre retenu. Enregistré dans les préférences (`places`, `order`) à la sortie et toutes les 30 s. L'ordre de la grille est maintenant indexé par bundle id et n'est plus oublié quand une app quitte. Deux fenêtres d'une app avec le même titre et le même cadre peuvent échanger leurs bureaux.
 - Mises à jour : un clic dans le menu du clic droit, pas de Sparkle. La clé des releases (macseal-builder) fait la confiance : le zip doit satisfaire l'exigence désignée de l'app installée (`codesign --verify -R`). Téléchargé par `URLSession` et décompressé par `ditto`, il n'a pas de quarantaine, donc pas de boîte Gatekeeper (vérifié à la main avec curl + ditto, 0.1.9 → 0.1.10, macOS 27.2.1). Désactivé pour les builds ad hoc : leur exigence est un cdhash qu'aucune release ne satisfait. Un `sh` détaché échange les bundles après `quit()`, en gardant l'ancien tant que la copie n'a pas réussi.
 
 ## Pas encore géré
@@ -29,6 +30,7 @@
 | OS | État |
 |---|---|
 | macOS 27.0.1 (arm64) | changement, ⌃⇧N, restauration sur SIGTERM, grille (⌃ maintenu l'affiche, un appui bref non), grille depuis l'icône (clic sur un bureau, clic ailleurs ferme, clic droit Quitter) vérifiés, 1 écran, 7 apps ; suivi Cmd-Tab vu marcher par effet de bord ; focus pris sur bureau vide, restauration à la fermeture après ⌃⇧N enchaînés (3 passes scriptées) ; le .app du dmg publié tourne ; suivi AltTab, fenêtres des apps de barre des menus (Stats), raccourcis du pavé (scriptés), glisser-déposer dans la grille, survol et curseur, six apps par case vérifiés à la main ; Open at Login pas encore (issue #1) |
+| macOS 27.2.1 (arm64) | mise à jour depuis le menu du clic droit : 0.2.0 → 0.2.1 depuis le zip de la release, pas de boîte Gatekeeper, Accessibilité gardée, fenêtres des autres bureaux revenues à leur place, aucun bundle oublié |
 
 ## Pièges
 

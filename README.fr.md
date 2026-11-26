@@ -13,6 +13,7 @@
 - **Raccourcis déjà connus** : les mêmes que les Spaces de macOS.
 - **Vous suit** : Cmd-Tab ou le Dock vers une fenêtre d'un autre bureau vous y emmène.
 - **Rien de perdu** : quitter, Ctrl-C ou un plantage remet chaque fenêtre à l'écran.
+- **Votre disposition survit aux relances** : chaque fenêtre retrouve son bureau, et chaque app sa place dans la grille, après une relance de wrkspaces ou de l'app, même un navigateur avec une fenêtre sur le 1 et une autre sur le 3. Lancer une app dont la fenêtre vit ailleurs vous y emmène.
 - **Presque aucune config** : une icône dans la barre de menus avec le numéro du bureau courant et un petit dessin : une fenêtre avec des yeux, un blob, une fleur dont la pétale en surbrillance est le bureau, ou un anneau. Il se choisit sous la grille que l'icône ouvre.
 - **Voir où est tout** : un clic sur l'icône ouvre une grille des bureaux avec leurs apps (jusqu'à huit par bureau), un clic sur un bureau vous y emmène. Gardez `⌃` enfoncé après `⌃N` et la même grille apparaît, comme Cmd-Tab. Glissez une app sur un autre bureau pour y envoyer ses fenêtres, ou sur une autre app du même bureau pour les réordonner. Une liste dépliable sous la grille rappelle tous les raccourcis. Clic droit sur l'icône pour choisir le nombre de bureaux, ou pour quitter.
 
