@@ -292,9 +292,9 @@ final class GridView: NSView {
     }
 
     override func draw(_: NSRect) {
-        // The blur alone turns light grey over a bright wallpaper and the numbers fade:
-        // a fixed dark veil keeps the contrast whatever is behind.
-        NSColor.black.withAlphaComponent(0.3).setFill()
+        // Opaque: the blur turns light grey over a bright wallpaper or a white page and the
+        // numbers fade. A solid dark grey reads the same whatever is behind.
+        NSColor(white: 0.2, alpha: 1).setFill()
         NSBezierPath(roundedRect: bounds, xRadius: 18, yRadius: 18).fill()
         for (i, icons) in apps.enumerated() {
             let r = tileRect(i)
