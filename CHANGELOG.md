@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Update from the right-click menu: wrkspaces checks for a new version once a day and, on a click, downloads it, checks its signature and relaunches, keeping Accessibility access.
+
 ## 0.1.10 (2026-11-25)
 
 ### Changed

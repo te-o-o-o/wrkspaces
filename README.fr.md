@@ -49,6 +49,8 @@ Si les raccourcis natifs « Passer au bureau N » sont activés, désactivez-les
 
 **Pas encore** : un seul jeu de bureaux pour tous les écrans, pas de bureaux par écran.
 
+**Mises à jour** : quand une nouvelle version sort, le menu du clic droit propose **Update to X.Y.Z**. Un clic la télécharge, vérifie qu'elle est signée avec la même clé et la relance : pas de boîte Gatekeeper, l'accès Accessibilité est gardé. Une copie compilée avec `./bundle.sh` ne se met jamais à jour.
+
 ## Développement
 
 ```sh
