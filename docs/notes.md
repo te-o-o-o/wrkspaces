@@ -29,6 +29,7 @@
 | OS | Status |
 |---|---|
 | macOS 27.0.1 (arm64) | switch, ⌃⇧N, restore on SIGTERM, switcher grid (held ⌃ shows it, quick tap does not), grid from the icon (click a tile, click outside closes, right-click Quit) verified, 1 screen, 7 apps; Cmd-Tab follow seen working by side effect; empty workspace takes focus, quit restores after ⌃⇧N races (3 scripted runs); .app from the release dmg runs; AltTab follow, menu bar app windows (Stats), keypad shortcuts (scripted), grid drag and drop, hover and cursor, six apps per tile checked by hand; Open at Login not yet (issue #1) |
+| macOS 27.2.1 (arm64) | update from the right-click menu: 0.2.0 → 0.2.1 from the release zip, no Gatekeeper dialog, Accessibility kept, windows of other workspaces back in place, no leftover bundle |
 
 ## Pitfalls
 

@@ -29,6 +29,7 @@
 | OS | État |
 |---|---|
 | macOS 27.0.1 (arm64) | changement, ⌃⇧N, restauration sur SIGTERM, grille (⌃ maintenu l'affiche, un appui bref non), grille depuis l'icône (clic sur un bureau, clic ailleurs ferme, clic droit Quitter) vérifiés, 1 écran, 7 apps ; suivi Cmd-Tab vu marcher par effet de bord ; focus pris sur bureau vide, restauration à la fermeture après ⌃⇧N enchaînés (3 passes scriptées) ; le .app du dmg publié tourne ; suivi AltTab, fenêtres des apps de barre des menus (Stats), raccourcis du pavé (scriptés), glisser-déposer dans la grille, survol et curseur, six apps par case vérifiés à la main ; Open at Login pas encore (issue #1) |
+| macOS 27.2.1 (arm64) | mise à jour depuis le menu du clic droit : 0.2.0 → 0.2.1 depuis le zip de la release, pas de boîte Gatekeeper, Accessibilité gardée, fenêtres des autres bureaux revenues à leur place, aucun bundle oublié |
 
 ## Pièges
 
