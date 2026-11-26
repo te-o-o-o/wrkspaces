@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-11-26)
 
 ### Added
 
 - Update from the right-click menu: wrkspaces checks for a new version once a day and, on a click, downloads it, checks its signature and relaunches, keeping Accessibility access.
+
+### Changed
+
+- The install steps explain **Open Anyway**: on macOS 15 and later, right-click → Open no longer gets past Gatekeeper.
 
 ## 0.1.10 (2026-11-25)
 
