@@ -10,10 +10,30 @@ final class App: NSObject, NSApplicationDelegate {
         set { UserDefaults.standard.set(newValue, forKey: "workspaces") }
     }
 
+    // Where every window was, saved for the next launch of wrkspaces or of its apps.
+    static var savedPlaces: [Memo] {
+        get { UserDefaults.standard.data(forKey: "places").flatMap { try? JSONDecoder().decode([Memo].self, from: $0) } ?? [] }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: "places") }
+    }
+
+    // The grid order per workspace, by bundle id. Defaults keys must be strings.
+    static var savedOrder: [Int: [String]] {
+        get {
+            let raw = UserDefaults.standard.dictionary(forKey: "order") as? [String: [String]] ?? [:]
+            return Dictionary(uniqueKeysWithValues: raw.compactMap { k, v in Int(k).map { ($0, v) } })
+        }
+        set { UserDefaults.standard.set(Dictionary(uniqueKeysWithValues: newValue.map { (String($0.key), $0.value) }), forKey: "order") }
+    }
+
     var ws = Workspaces<CGWindowID>(count: App.savedCount)
-    var appOrder = AppOrder<pid_t>()  // apps per workspace, in the order the grid shows
+    // Apps per workspace, in the order the grid shows. By bundle id, not pid, so a relaunched
+    // app keeps its place.
+    var appOrder = AppOrder<String>(App.savedOrder)
     var elements: [CGWindowID: AXUIElement] = [:]  // latest AX element of each window
     var saved: [CGWindowID: CGPoint] = [:]  // real position of each hidden window
+    var places = Places(App.savedPlaces)  // remembered windows not back yet
+    var snapshot: [CGWindowID: Memo] = [:]  // the live windows at the last remember()
+    let startedAt = Date()
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let switcher = Switcher()
     let updater = Updater()
@@ -57,7 +77,7 @@ final class App: NSObject, NSApplicationDelegate {
             switcher.grid.needsDisplay = true
         }
         switcher.grid.onReorderApp = { [unowned self] pid, before, n in
-            appOrder.place(pid, before: before, in: n)
+            appOrder.place(appKey(pid), before: before.map(appKey), in: n)
             switcher.update(overview(refreshing: false), current: ws.current)
         }
         switcher.onReleaseOnApp = { [unowned self] pid in focusApp(pid) }
@@ -97,8 +117,31 @@ final class App: NSObject, NSApplicationDelegate {
         ) { [unowned self] _ in
             if let id = focusedWindow()?.windowID, let n = ws.workspace(of: id), n != ws.current { switchTo(n, focusing: id) }
         }
+        // A launched app whose window is remembered on another workspace: go there with it.
+        // Its windows show up over the next seconds, so look a few times.
+        // ponytail: a window that takes longer gets parked on its workspace without following.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main
+        ) { [unowned self] note in
+            guard let pid = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier else { return }
+            for delay in [0.5, 1.5, 3.0] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in followLaunched(pid) }
+            }
+        }
+        // Saved on quit too; this covers a crash, a logout or a forced restart.
+        Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [unowned self] _ in
+            refresh()
+            remember()
+        }
         updateStatusItem()
         updater.start()
+    }
+
+    func followLaunched(_ pid: pid_t) {
+        refresh()
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+              let id = focusedWindow()?.windowID, let n = ws.workspace(of: id), n != ws.current else { return }
+        switchTo(n, focusing: id)
     }
 
     /// Lands on the workspace's first app, on its last used window. `focusing`: the window that
@@ -171,11 +214,65 @@ final class App: NSObject, NSApplicationDelegate {
 
     func refresh() {
         let found = allWindows().compactMap { w in w.windowID.map { ($0, w) } }
+        let alive = Set(found.map(\.0))
+        // Windows gone because their app quit: remembered, with the workspace they had just now,
+        // so the app's next launch puts them back. A window closed in a running app is forgotten.
+        for (id, w) in elements where !alive.contains(id) && NSRunningApplication(processIdentifier: w.pid) == nil {
+            if var m = snapshot.removeValue(forKey: id) {
+                m.workspace = ws.workspace(of: id) ?? m.workspace
+                places.memos.append(m)
+            }
+        }
+        var hasWindows = Set(found.filter { ws.workspace(of: $0.0) != nil }.map(\.1.pid))
+        var restored: [CGWindowID: CGPoint] = [:]
         elements = Dictionary(found, uniquingKeysWith: { first, _ in first })
         // In the order AX lists them, not the dictionary's: it sets the order of new arrivals.
-        ws.sync(found.map(\.0))
+        let elsewhere = ws.sync(found.map(\.0)) { id in
+            guard let w = elements[id], let app = bundleID(w.pid) else { return nil }
+            defer { hasWindows.insert(w.pid) }
+            let frame = CGRect(origin: w.position ?? .zero, size: w.size ?? .zero)
+            guard let m = places.claim(app: app, window: id, title: w.title, frame: frame,
+                                       restoring: isRestoring(w.pid), appHasOtherWindows: hasWindows.contains(w.pid)) else { return nil }
+            restored[id] = m.frame.origin
+            return m.workspace
+        }
         saved = saved.filter { elements[$0.key] != nil }
-        appOrder.keep(only: Set(NSWorkspace.shared.runningApplications.map(\.processIdentifier)))
+        for id in elsewhere {
+            park(id)
+            // Back to its place from before, not where it reopened (the fallback, after a crash).
+            if let p = restored[id], !isHidden(p, screens: screens) { saved[id] = p }
+        }
+    }
+
+    /// Just launched, or wrkspaces just started: its windows are coming back from a relaunch.
+    func isRestoring(_ pid: pid_t) -> Bool {
+        let launched = NSRunningApplication(processIdentifier: pid)?.launchDate ?? .distantPast
+        return Date().timeIntervalSince(max(launched, startedAt)) < 60
+    }
+
+    func bundleID(_ pid: pid_t) -> String? { NSRunningApplication(processIdentifier: pid)?.bundleIdentifier }
+
+    /// The grid's key for an app: its bundle id, which survives a relaunch, unlike its pid.
+    func appKey(_ pid: pid_t) -> String { bundleID(pid) ?? "pid \(pid)" }
+
+    /// Saves every window's place. Lowest workspace first: an app reopening one blank window
+    /// takes the first memo of its app.
+    func remember() {
+        snapshot = [:]
+        for n in 1...ws.count {
+            for id in ws.windows(in: n) {
+                guard let w = elements[id], let app = bundleID(w.pid) else { continue }
+                let origin = saved[id] ?? w.position ?? .zero  // parked: where it really is
+                snapshot[id] = Memo(app: app, window: id, title: w.title, frame: CGRect(origin: origin, size: w.size ?? .zero), workspace: n)
+            }
+        }
+        // Memos nobody claimed: kept for apps not running (back at their next launch) or still
+        // restoring; those of a settled running app are windows it no longer opens.
+        let settled = Set(NSWorkspace.shared.runningApplications.filter { !isRestoring($0.processIdentifier) }.compactMap(\.bundleIdentifier))
+        places.memos.removeAll { settled.contains($0.app) }
+        let live = (1...ws.count).flatMap { ws.windows(in: $0) }.compactMap { snapshot[$0] }
+        App.savedPlaces = places.memos + live
+        App.savedOrder = appOrder.order
     }
 
     func park(_ id: CGWindowID) {
@@ -204,6 +301,7 @@ final class App: NSObject, NSApplicationDelegate {
 
     @objc func quit() {
         refresh()
+        if started { remember() }  // before the windows come back: parked ones are still known as such
         saved.forEach { elements[$0.key]?.setPosition($0.value) }
         recoverStrays()  // anything still parked that we lost track of
         NSApp.terminate(nil)
@@ -318,10 +416,15 @@ final class App: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Apps of workspace `n`, one pid per app, in the order they arrived there.
+    /// Apps of workspace `n`, one pid per app, in the grid's saved order (by bundle id).
     func apps(in n: Int) -> [pid_t] {
-        var seen = Set<pid_t>()
-        return appOrder.apps(in: n, present: ws.windows(in: n).compactMap { elements[$0]?.pid }.filter { seen.insert($0).inserted })
+        var pids: [String: pid_t] = [:]
+        var keys: [String] = []
+        for pid in ws.windows(in: n).compactMap({ elements[$0]?.pid }) where pids[appKey(pid)] == nil {
+            pids[appKey(pid)] = pid
+            keys.append(appKey(pid))
+        }
+        return appOrder.apps(in: n, present: keys).compactMap { pids[$0] }
     }
 }
 

@@ -17,6 +17,14 @@ extension AXUIElement {
         return AXValueGetValue(v, .cgPoint, &p) ? p : nil
     }
 
+    var size: CGSize? {
+        guard let v: AXValue = get(kAXSizeAttribute) else { return nil }
+        var s = CGSize.zero
+        return AXValueGetValue(v, .cgSize, &s) ? s : nil
+    }
+
+    var title: String { self.get(kAXTitleAttribute) ?? "" }  // a bare get( reads as the getter keyword
+
     func setPosition(_ p: CGPoint) {
         var p = p
         AXUIElementSetAttributeValue(self, kAXPositionAttribute as CFString, AXValueCreate(.cgPoint, &p)!)

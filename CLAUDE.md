@@ -5,7 +5,7 @@ This project is outside the global stack table on purpose (macOS-only app, Swift
 
 | Target | Role | Rule |
 |---|---|---|
-| `WrkspacesCore` | which window lives on which workspace, where hidden windows park | no AppKit, no AX: pure, unit-tested |
+| `WrkspacesCore` | which window lives on which workspace, where hidden windows park, which remembered window a new one is (`Places`) | no AppKit, no AX: pure, unit-tested |
 | `wrkspaces` | AX window moves, Carbon hotkeys, menu bar item, `Updater` | thin shell over the core; the updater installs nothing that fails `codesign -R` against the installed requirement |
 
 ## Commands

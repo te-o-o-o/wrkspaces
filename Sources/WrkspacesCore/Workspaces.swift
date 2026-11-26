@@ -11,15 +11,23 @@ public struct Workspaces<W: Hashable> {
 
     public init(count: Int = maxWorkspaces) { self.count = min(max(count, 1), maxWorkspaces) }
 
-    /// New windows land on the current workspace, after the others; closed ones are forgotten.
-    public mutating func sync(_ alive: [W]) {
+    /// New windows land on `place(w)` when it names one (remembered from before a relaunch),
+    /// on the current workspace otherwise, after the others; closed ones are forgotten.
+    /// Returns the new windows that landed on another workspace: they must be hidden.
+    @discardableResult
+    public mutating func sync(_ alive: [W], place: (W) -> Int? = { _ in nil }) -> [W] {
         let set = Set(alive)
         home = home.filter { set.contains($0.key) }
         arrival = arrival.filter { set.contains($0) }
+        var elsewhere: [W] = []
         for w in alive where home[w] == nil {
-            home[w] = current
+            // A workspace dropped since (fewer of them now) sends it to the last one.
+            let n = place(w).map { min(max($0, 1), count) } ?? current
+            home[w] = n
             arrival.append(w)
+            if n != current { elsewhere.append(w) }
         }
+        return elsewhere
     }
 
     public func workspace(of w: W) -> Int? { home[w] }
@@ -62,12 +70,12 @@ public struct Workspaces<W: Hashable> {
 }
 
 /// The order of the apps on each workspace, kept apart from their windows: windows come and go
-/// (a tab closed and reopened, a window missed by one slow AX read), the app keeps its place.
-/// It only forgets an app once it quits.
+/// (a tab closed and reopened, a window missed by one slow AX read, the app relaunched), the
+/// app keeps its place. Saved with the windows' places, so it survives a relaunch too.
 public struct AppOrder<A: Hashable> {
-    private var order: [Int: [A]] = [:]
+    public private(set) var order: [Int: [A]]
 
-    public init() {}
+    public init(_ order: [Int: [A]] = [:]) { self.order = order }
 
     /// `present`: the apps with a window on workspace n. Known ones keep their place, new ones
     /// go last, in the order given.
@@ -84,11 +92,6 @@ public struct AppOrder<A: Hashable> {
         var list = order[n, default: []].filter { $0 != a }
         list.insert(a, at: b.flatMap { list.firstIndex(of: $0) } ?? list.endIndex)
         order[n] = list
-    }
-
-    /// Apps that quit lose their places.
-    public mutating func keep(only running: Set<A>) {
-        order = order.mapValues { $0.filter(running.contains) }
     }
 }
 

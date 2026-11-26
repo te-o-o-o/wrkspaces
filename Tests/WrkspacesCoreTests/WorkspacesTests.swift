@@ -104,9 +104,9 @@ import WrkspacesCore
     #expect(order.apps(in: 2, present: ["web", "term", "mail", "chat"]) == ["mail", "term", "web", "chat"])
     order.place("term", before: nil, in: 2)
     #expect(order.apps(in: 2, present: ["term", "web", "mail", "chat"]) == ["mail", "web", "chat", "term"])
-    // mail quit: when it comes back it goes last.
-    order.keep(only: ["term", "web", "chat"])
-    #expect(order.apps(in: 2, present: ["mail", "term", "web", "chat"]) == ["web", "chat", "term", "mail"])
+    // mail quit and came back (a new pid, the same bundle id): same place.
+    #expect(order.apps(in: 2, present: ["web", "chat", "term"]) == ["web", "chat", "term"])
+    #expect(order.apps(in: 2, present: ["mail", "term", "web", "chat"]) == ["mail", "web", "chat", "term"])
     #expect(order.apps(in: 1, present: ["web"]) == ["web"])  // each workspace has its own order
 }
 
