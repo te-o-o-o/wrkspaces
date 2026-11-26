@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (2026-11-26)
+
+### Changed
+
+- Nothing new in the app: this release exists to check that 0.2.0 updates itself from the right-click menu.
+
 ## 0.2.0 (2026-11-26)
 
 ### Added
