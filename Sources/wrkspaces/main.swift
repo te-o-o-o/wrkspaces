@@ -213,7 +213,18 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     func refresh() {
-        let found = allWindows().compactMap { w in w.windowID.map { ($0, w) } }
+        let listed = windowServerIDs()
+        guard !listed.isEmpty else { return }  // the window server not answering, not zero windows
+        var found = allWindows().compactMap { w in w.windowID.map { ($0, w) } }
+        // AX misses windows now and then: an app busy, or all of them while the Mac wakes up.
+        // Forgotten, a window loses its workspace and its real place, and comes back on the
+        // current one at the fallback position. So one AX did not list is kept while the window
+        // server still has it, unless AX says it was minimized or went full screen.
+        let read = Set(found.map(\.0))
+        found += elements.filter { id, w in
+            !read.contains(id) && listed.contains(id)
+                && (w.get(kAXMinimizedAttribute) as Bool?) != true && (w.get("AXFullScreen") as Bool?) != true
+        }.map { ($0.key, $0.value) }
         let alive = Set(found.map(\.0))
         // Windows gone because their app quit: remembered, with the workspace they had just now,
         // so the app's next launch puts them back. A window closed in a running app is forgotten.

@@ -62,8 +62,7 @@ private func isSystemAgent(_ app: NSRunningApplication) -> Bool {
 /// windows are skipped: they live outside our workspaces. So are floating ones (always-on-top
 /// popups like copycopy's): parked, their app saved the corner as their place and reopened there.
 func allWindows() -> [AXUIElement] {
-    let list = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] ?? []
-    let normal = Set(list.filter { $0[kCGWindowLayer as String] as? Int == 0 }.compactMap { $0[kCGWindowNumber as String] as? CGWindowID })
+    let normal = windowServerIDs()
     return NSWorkspace.shared.runningApplications
         // Menu bar apps (no Dock icon) count too: their real windows, like Stats' Bluetooth one,
         // belong to a workspace. Their popovers are not standard windows, the filter below drops them.
@@ -77,6 +76,13 @@ func allWindows() -> [AXUIElement] {
                 && ($0.get("AXFullScreen") as Bool?) != true
                 && $0.windowID.map(normal.contains) == true
         }
+}
+
+/// Every normal-layer window the window server has, minimized and hidden ones included. It
+/// never misses one, unlike AX: what tells a window closed from a window AX failed to read.
+func windowServerIDs() -> Set<CGWindowID> {
+    let list = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] ?? []
+    return Set(list.filter { $0[kCGWindowLayer as String] as? Int == 0 }.compactMap { $0[kCGWindowNumber as String] as? CGWindowID })
 }
 
 /// Asked to AX live: NSWorkspace.frontmostApplication is only refreshed by our run loop,
