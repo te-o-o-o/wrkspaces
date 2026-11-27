@@ -6,6 +6,10 @@
 
 - Windows go back to their workspace, and apps to their place in the grid, after wrkspaces or the app restarts. Launching an app whose window lives on another workspace takes you there.
 
+### Fixed
+
+- Locking the Mac or waking it from sleep no longer brings every window onto the current workspace at the top-left corner.
+
 ## 0.2.1 (2026-11-26)
 
 ### Changed
